@@ -16,7 +16,7 @@
  */
  
 #define EMPL_TARGET_ATMEGA328
-#define MPU6050 //MPU9150
+#define MPU9150
  
 #include <stdio.h>
 #include <stdint.h>
@@ -67,7 +67,8 @@
 #define log_e       MPL_LOGE
 
 #elif defined EMPL_TARGET_ATMEGA328
-#include "arduino_shim.h"
+#include <teensy_port.h>
+#include <arduino.h>
 
 #else
 #error  Gyro driver is missing the system layer implementations.

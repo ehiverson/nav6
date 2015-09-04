@@ -253,8 +253,6 @@ void loop() {
 	// Read latest heading from compass
 	// Note that the compass heading is tilt compensated based upon
 	// previous pitch/roll readings from the MPU
-	compass_heading_radians = compassHeadingRadians(mag_x,mag_y,mag_z,-ypr[1], ypr[2]);
-	compass_heading_degrees = compass_heading_radians * radians_to_degrees;
 
 	// Adjust compass for board orientation,
 	// and modify range from -180-180 to

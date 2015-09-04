@@ -31,6 +31,13 @@ THE SOFTWARE.
 
 #ifndef _HELPER_3DMATH_H_
 #define _HELPER_3DMATH_H_
+#include <cmath>
+
+// angle in radians = angle in degrees * Pi / 180
+const float degrees2radians = M_PI / 180.0;
+// angle in degrees = angle in radians * 180 / Pi
+const float radians2degrees = 180.0 / M_PI;
+
 
 class Quaternion {
     public:
@@ -44,6 +51,7 @@ class Quaternion {
             x = 0.0f;
             y = 0.0f;
             z = 0.0f;
+			normalize();
         }
         
         Quaternion(float nw, float nx, float ny, float nz) {
@@ -51,9 +59,18 @@ class Quaternion {
             x = nx;
             y = ny;
             z = nz;
+			normalize();
+        }
+		
+		void init(float nw, float nx, float ny, float nz) {
+            w = nw;
+            x = nx;
+            y = ny;
+            z = nz;
+			normalize();
         }
 
-        Quaternion getProduct(Quaternion q) {
+        Quaternion multiply(Quaternion q) {
             // Quaternion multiplication is defined by:
             //     (Q1 * Q2).w = (w1w2 - x1x2 - y1y2 - z1z2)
             //     (Q1 * Q2).x = (w1x2 + x1w2 + y1z2 - z1y2)
@@ -66,28 +83,24 @@ class Quaternion {
                 w*q.z + x*q.y - y*q.x + z*q.w); // new z
         }
 
-        Quaternion getConjugate() {
+        Quaternion conjugate() {
             return Quaternion(w, -x, -y, -z);
         }
         
-        float getMagnitude() {
+        float magnitude() {
             return sqrt(w*w + x*x + y*y + z*z);
         }
         
         void normalize() {
-            float m = getMagnitude();
+            float m = magnitude();
             w /= m;
             x /= m;
             y /= m;
             z /= m;
         }
-        
-        Quaternion getNormalized() {
-            Quaternion r(w, x, y, z);
-            r.normalize();
-            return r;
-        }
+		
 };
+
 
 class VectorInt16 {
     public:
@@ -106,25 +119,26 @@ class VectorInt16 {
             y = ny;
             z = nz;
         }
+		
+		void init(int16_t nx, int16_t ny, int16_t nz) {
+            x = nx;
+            y = ny;
+            z = nz;
+        }
 
-        float getMagnitude() {
+        float magnitude() {
             return sqrt(x*x + y*y + z*z);
         }
 
         void normalize() {
-            float m = getMagnitude();
+            float m = magnitude();
             x /= m;
             y /= m;
             z /= m;
         }
         
-        VectorInt16 getNormalized() {
-            VectorInt16 r(x, y, z);
-            r.normalize();
-            return r;
-        }
         
-        void rotate(Quaternion *q) {
+        VectorInt16 rotate(Quaternion q) {
             // http://www.cprogramming.com/tutorial/3d/quaternions.html
             // http://www.euclideanspace.com/maths/algebra/realNormedAlgebra/quaternions/transforms/index.htm
             // http://content.gpwiki.org/index.php/OpenGL:Tutorials:Using_Quaternions_to_represent_rotation
@@ -138,21 +152,13 @@ class VectorInt16 {
             Quaternion p(0, x, y, z);
 
             // quaternion multiplication: q * p, stored back in p
-            p = q -> getProduct(p);
+            p = q.multiply(p);
 
             // quaternion multiplication: p * conj(q), stored back in p
-            p = p.getProduct(q -> getConjugate());
+            p = p.multiply(q.conjugate());
 
             // p quaternion is now [0, x', y', z']
-            x = p.x;
-            y = p.y;
-            z = p.z;
-        }
-
-        VectorInt16 getRotated(Quaternion *q) {
-            VectorInt16 r(x, y, z);
-            r.rotate(q);
-            return r;
+			return VectorInt16(p.x,p.y,p.z);
         }
 };
 
@@ -173,45 +179,47 @@ class VectorFloat {
             y = ny;
             z = nz;
         }
+		
+		void init(float nx, float ny, float nz) {
+            x = nx;
+            y = ny;
+            z = nz;
+        }
 
-        float getMagnitude() {
+        float magnitude() {
             return sqrt(x*x + y*y + z*z);
         }
 
         void normalize() {
-            float m = getMagnitude();
+            float m = magnitude();
             x /= m;
             y /= m;
             z /= m;
         }
         
-        VectorFloat getNormalized() {
-            VectorFloat r(x, y, z);
-            r.normalize();
-            return r;
-        }
-        
-        void rotate(Quaternion *q) {
+        VectorFloat rotate(Quaternion q) {
             Quaternion p(0, x, y, z);
 
             // quaternion multiplication: q * p, stored back in p
-            p = q -> getProduct(p);
+            p=q.multiply(p);
 
             // quaternion multiplication: p * conj(q), stored back in p
-            p = p.getProduct(q -> getConjugate());
+            p=p.multiply(q.conjugate());
 
             // p quaternion is now [0, x', y', z']
-            x = p.x;
-            y = p.y;
-            z = p.z;
+            return VectorFloat(p.x,p.y,p.z);
         }
-
-        VectorFloat getRotated(Quaternion *q) {
-            VectorFloat r(x, y, z);
-            r.rotate(q);
-            return r;
-        }
+		VectorFloat subtract(VectorFloat vec){
+			return VectorFloat(x-vec.x,y-vec.y,z-vec.z);
+		}
+		VectorFloat add(VectorFloat vec){
+			return VectorFloat(x+vec.x,y+vec.y,z+vec.z);
+		}
+		VectorFloat multiply(float scale){
+			return VectorFloat(x*scale,y*scale,z*scale);
+		}
 };
+
 
 void getEuler(float *data, Quaternion *q) {
 
@@ -265,5 +273,32 @@ unsigned short inv_orientation_matrix_to_scalar(const signed char *mtx) {
 
 	return scalar;
 }
+
+Quaternion qfromYaw(VectorFloat vec,float yawradians)
+{
+	float a=sin(yawradians/2);
+	Quaternion q(cos(yawradians/2),a*vec.x,a*vec.y,a*vec.z);
+	return q;
+	
+	
+	
+}
+
+
+VectorFloat ellipseTransform(VectorFloat vec,float invw[],float offsets[])
+{
+	
+	vec.x-=offsets[0];
+    vec.y-=offsets[1];
+    vec.z-=offsets[2];
+	VectorFloat v(
+    invw[0]*vec.x+invw[1]*vec.y+invw[2]*vec.z,
+    invw[3]*vec.x+invw[4]*vec.y+invw[5]*vec.z,
+    invw[6]*vec.x+invw[7]*vec.y+invw[8]*vec.z
+    );
+	return v;
+}
+
+
 
 #endif /* _HELPER_3DMATH_H_ */

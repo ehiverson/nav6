@@ -82,9 +82,9 @@ THE SOFTWARE.
 
 #define MSGID_STREAM_CMD 'S'
 #define STREAM_CMD_MESSAGE_LENGTH 9
-#define STREAM_CMD_STREAM_TYPE_YPR MSGID_YPR_UPDATE
-#define STREAM_CMD_STREAM_TYPE_QUATERNION MSGID_QUATERNION_UPDATE
-#define STREAM_CMD_STREAM_TYPE_RAW MSGID_RAW_UPDATE
+#define STREAM_CMD_STREAM_TYPE_YPR MSGID_YPR_UPDATE 'y'
+#define STREAM_CMD_STREAM_TYPE_QUATERNION MSGID_QUATERNION_UPDATE 'q'
+#define STREAM_CMD_STREAM_TYPE_RAW MSGID_RAW_UPDATE 'r'
 #define STREAM_CMD_STREAM_TYPE_INDEX 2
 #define STREAM_CMD_UPDATE_RATE_HZ_INDEX 3
 #define STREAM_CMD_CHECKSUM_INDEX 5
@@ -139,11 +139,7 @@ static int encodeYPRUpdate( char *protocol_buffer, float yaw, float pitch, float
   return YPR_UPDATE_MESSAGE_LENGTH;
 }
 
-static int encodeQuaternionUpdate( char *protocol_buffer, 
-							uint16_t q1, uint16_t q2, uint16_t q3, uint16_t q4, 
-							uint16_t accel_x, uint16_t accel_y, uint16_t accel_z,
-							int16_t mag_x, int16_t mag_y, int16_t mag_z,
-							float temp_c )
+static int encodeQuaternionUpdate( char *protocol_buffer, uint16_t q1, uint16_t q2, uint16_t q3, uint16_t q4, uint16_t accel_x, uint16_t accel_y, uint16_t accel_z,int16_t mag_x, int16_t mag_y, int16_t mag_z,float temp_c )
 {
   // Header
   protocol_buffer[0] = PACKET_START_CHAR;
@@ -168,11 +164,7 @@ static int encodeQuaternionUpdate( char *protocol_buffer,
   return QUATERNION_UPDATE_MESSAGE_LENGTH;
 }
 
-static int encodeGyroUpdate( char *protocol_buffer, 
-							uint16_t gyro_x, uint16_t gyro_y, uint16_t gyro_z, 
-							uint16_t accel_x, uint16_t accel_y, uint16_t accel_z,
-							int16_t mag_x, int16_t mag_y, int16_t mag_z,
-							float temp_c )
+static int encodeGyroUpdate( char *protocol_buffer, uint16_t gyro_x, uint16_t gyro_y, uint16_t gyro_z, uint16_t accel_x, uint16_t accel_y, uint16_t accel_z,int16_t mag_x, int16_t mag_y, int16_t mag_z,float temp_c )
 {
   // Header
   protocol_buffer[0] = PACKET_START_CHAR;
@@ -213,11 +205,7 @@ static int encodeStreamCommand( char *protocol_buffer, char stream_type, unsigne
   return STREAM_CMD_MESSAGE_LENGTH;
 }
 
-static int encodeStreamResponse( char *protocol_buffer, char stream_type, 
-					uint16_t gyro_fsr_dps, uint16_t accel_fsr_g, uint16_t update_rate_hz, 
-					float yaw_offset_degrees, 
-					uint16_t q1_offset, uint16_t q2_offset, uint16_t q3_offset, uint16_t q4_offset,
-					uint16_t flags)
+static int encodeStreamResponse( char *protocol_buffer, char stream_type, uint16_t gyro_fsr_dps, uint16_t accel_fsr_g, uint16_t update_rate_hz, float yaw_offset_degrees, uint16_t q1_offset, uint16_t q2_offset, uint16_t q3_offset, uint16_t q4_offset,uint16_t flags)
 {
   // Header
   protocol_buffer[0] = PACKET_START_CHAR;
@@ -241,11 +229,7 @@ static int encodeStreamResponse( char *protocol_buffer, char stream_type,
   return STREAM_RESPONSE_MESSAGE_LENGTH;
 }
 
-static int decodeStreamResponse( char *buffer, int length, 
-					char& stream_type, uint16_t& gyro_fsr_dps, uint16_t& accel_fsr_g, uint16_t& update_rate_hz,
-					float& yaw_offset_degrees, 
-					uint16_t& q1_offset, uint16_t& q2_offset, uint16_t& q3_offset, uint16_t& q4_offset,
-					uint16_t& flags )
+static int decodeStreamResponse( char *buffer, int length, char& stream_type, uint16_t& gyro_fsr_dps, uint16_t& accel_fsr_g, uint16_t& update_rate_hz,float& yaw_offset_degrees, uint16_t& q1_offset, uint16_t& q2_offset, uint16_t& q3_offset, uint16_t& q4_offset,uint16_t& flags )
 {
   if ( length < STREAM_RESPONSE_MESSAGE_LENGTH ) return 0;
   if ( ( buffer[0] == PACKET_START_CHAR ) && ( buffer[1] == MSG_ID_STREAM_RESPONSE ) )
@@ -299,11 +283,7 @@ static int decodeYPRUpdate( char *buffer, int length, float& yaw, float& pitch, 
   return 0;
 }
 
-static int decodeQuaternionUpdate( char *buffer, int length, 
-									int16_t& q1, int16_t& q2, int16_t& q3, int16_t& q4,
-									int16_t& accel_x, int16_t& accel_y, int16_t& accel_z,
-									int16_t& mag_x, int16_t& mag_y, int16_t& mag_z,
-									float& temp_c )
+static int decodeQuaternionUpdate( char *buffer, int length, int16_t& q1, int16_t& q2, int16_t& q3, int16_t& q4,int16_t& accel_x, int16_t& accel_y, int16_t& accel_z,int16_t& mag_x, int16_t& mag_y, int16_t& mag_z,float& temp_c )
 {
   if ( length < QUATERNION_UPDATE_MESSAGE_LENGTH ) return 0;
   if ( ( buffer[0] == PACKET_START_CHAR ) && ( buffer[1] == MSGID_QUATERNION_UPDATE ) )
@@ -326,11 +306,7 @@ static int decodeQuaternionUpdate( char *buffer, int length,
   return 0;
 }
 
-static int decodeGyroUpdate( char *buffer, int length, 
-							uint16_t& gyro_x, uint16_t& gyro_y, uint16_t& gyro_z, 
-							uint16_t& accel_x, uint16_t& accel_y, uint16_t& accel_z,
-							int16_t& mag_x, int16_t& mag_y, int16_t& mag_z,
-							float& temp_c )
+static int decodeGyroUpdate( char *buffer, int length, uint16_t& gyro_x, uint16_t& gyro_y, uint16_t& gyro_z, uint16_t& accel_x, uint16_t& accel_y, uint16_t& accel_z,int16_t& mag_x, int16_t& mag_y, int16_t& mag_z,float& temp_c )
 {
   if ( length < GYRO_UPDATE_MESSAGE_LENGTH ) return 0;
   if ( ( buffer[0] == PACKET_START_CHAR ) && ( buffer[1] == MSGID_GYRO_UPDATE ) )

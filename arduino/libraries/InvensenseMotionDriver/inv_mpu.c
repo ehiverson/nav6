@@ -19,7 +19,7 @@
  */
  
 #define EMPL_TARGET_ATMEGA328
-#define MPU6050 // MPU9150
+#define MPU9150
  
 #include <stdio.h>
 #include <stdint.h>
@@ -106,11 +106,13 @@ static inline int reg_int_cb(struct int_param_s *int_param)
 #define labs        abs
 #define fabs(x)     (((x)>0)?(x):-(x))
 #elif defined EMPL_TARGET_ATMEGA328
-#include "arduino_shim.h"
-#define i2c_write(a,b,c,d) shim_i2c_write(a,b,c,d)
-#define i2c_read(a,b,c,d) shim_i2c_read(a,b,c,d)
+#include <teensy_port.h>
+#include <arduino.h>
+#define i2c_write(a,b,c,d) i2c_write(a,b,c,d)
+#define i2c_read(a,b,c,d) i2c_read(a,b,c,d)
 static inline int reg_int_cb(struct int_param_s *int_param)
 {
+	pinMode(int_param->pin, INPUT);
 	attachInterrupt(int_param->pin, int_param->cb, RISING);
 	return 0;
 }
