@@ -132,13 +132,17 @@ while cond:
         #notice that mx and my are switched to acount for magnetometer orientation
         #mz is also negative.   
 
-        m[1]=int(b[4])/100.0
-        m[0]=int(b[5])/100.0
-        m[2]=-int(b[6])/100.0
-        print q
-        if not magcalibrate:
+        m[0]=float(b[4])
+        m[1]=float(b[5])
+        m[2]=float(b[6])
+        
+        a[0]=float(b[7])
+        a[1]=float(b[8])
+        a[2]=float(b[9])
+        print b
+        #if not magcalibrate:
             #APPLY COMPASS CALIBRATION
-            m=calibratemag(m,offsets,invw) 
+            #m=calibratemag(m,offsets,invw) 
         g=gravity(q)
         
         a-=g
@@ -147,7 +151,7 @@ while cond:
         m=rotate2world(q,m)
         
         lpm=np.vstack([lpm,m])
-        if len(lpm)>1000:
+        if len(lpm)>100:
             lpm=np.delete(lpm,0,0)
         m=np.mean(lpm,axis=0)
 
@@ -182,7 +186,7 @@ while cond:
         a=rotate2world(fusion,a)        
         g=rotate2world(fusion,g)
         
-        
+        '''
         #rudimentary acceleromter calibration
         if i==1:
             avg=a
@@ -192,7 +196,7 @@ while cond:
             avg=np.mean(avg,axis=0)
         else:
             a-=avg
-       
+       '''
         
         
         
@@ -205,9 +209,6 @@ while cond:
             lpm2=np.delete(lpm2,0,0)
         a=np.mean(lpm2,axis=0)
         
-        #unsuccessful attempt to calculation displacement from acceleration        
-        d+=a
-        pos+=d
         
         #Plotting
         mag=axis.scatter(m[0],m[1],m[2],color='g')
@@ -250,8 +251,7 @@ while cond:
         
         if magcalibrate or magcalcheck:
             magarr=np.vstack([magarr,m])
-        
-        
+       
         
         
     except KeyboardInterrupt:
@@ -261,6 +261,7 @@ while cond:
         print b
         ser.close()
         raise
+        
     except:
         print "unknown error"
         cond=False

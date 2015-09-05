@@ -114,8 +114,8 @@ while cond:
         rm[0]=float(b[11])
         rm[1]=float(b[12])
         rm[2]=float(b[13])
-        #m=rm        
-        print yaw
+        #a=rm        
+        print a.dot(a)
     
         
 

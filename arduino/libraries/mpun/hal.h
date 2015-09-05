@@ -166,8 +166,8 @@ void disable_mpu() {
 }
 
 
-boolean run_mpu_self_test(boolean& gyro_ok, boolean& accel_ok) {
-
+boolean run_mpu_self_test() {
+	boolean gyro_ok, accel_ok;
 	int result;
 	long gyro[3], accel[3];
 	boolean success = false;
@@ -175,6 +175,7 @@ boolean run_mpu_self_test(boolean& gyro_ok, boolean& accel_ok) {
 	gyro_ok = false;
 	accel_ok = false;
 	result = mpu_run_self_test(gyro, accel);
+	
 	if ((result & 0x1) != 0) {
 		// Gyro passed self test
 		gyro_ok = true;
@@ -185,6 +186,8 @@ boolean run_mpu_self_test(boolean& gyro_ok, boolean& accel_ok) {
 		gyro[2] = (long)(gyro[2] * sens);
 		dmp_set_gyro_bias(gyro);
 	}
+	/*
+	//This section of code causes the orientation to be incorrect if the chip doesn't boot on a level surface.
 	if ((result & 0x2) != 0) {
 		// Accelerometer passed self test
 		accel_ok = true;
@@ -195,7 +198,7 @@ boolean run_mpu_self_test(boolean& gyro_ok, boolean& accel_ok) {
 		accel[2] *= accel_sens;
 		dmp_set_accel_bias(accel);
 	}
-
+	*/
 	success = gyro_ok && accel_ok;
 
 	return success;
