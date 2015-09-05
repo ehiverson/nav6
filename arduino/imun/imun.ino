@@ -24,7 +24,7 @@ extern "C" {
 //Magnetometer State
 VectorFloat rmagvec,magvec,magvec2;
 //Alpha controls the lowpass filtering of the magnetometer. a higher value will result in faster but shakier magnetometer data.
-float alpha=0.01;
+const float alpha=0.1;
 float yawradians=0;
 //Magnetometer Calibration
 static float magCalMatrix[9] = 
@@ -50,7 +50,7 @@ VectorFloat zaxis0(0,0,1);
 VectorFloat zaxis(0,0,1);
 VectorFloat a(0,0,0);
 VectorFloat acal(0,0,0);
-Quaternion q,qmag,fusedq;
+Quaternion q,qmag,fusedq,qout;
 
 //Gyro/Accel/DMP Configuration
 unsigned char accel_fsr;  // accelerometer full-scale rate, in +/- Gs (possible values are 2, 4, 8 or 16).  Default:  2
@@ -106,6 +106,7 @@ void setup() {
 	Serial.println();
 	Serial.println(F("Initialization Complete"));
 	Serial.flush();
+ 
 	digitalWrite(STATUS_LED, LOW);
 }
 
@@ -128,8 +129,8 @@ void loop() {
 		//Math operations
 		
 		magvec=magvec.rotate(q);
+    
 		//Lowpass filter of rotated magnetic vector for stability. Via exponential smoothing.
-		
 		if (firstmagloop)
 		{
 			magvec2=magvec;
@@ -142,6 +143,7 @@ void loop() {
 		yawradians=atan2(magvec.x,magvec.y);
 		if (yawradians<0) yawradians+=6.2832;
 		qmag=qfromYaw(zaxis0,yawradians);		
+    
 		//Reset magnetometer reading timer.
 		elapsed_since_compass=0;
 	}
@@ -169,10 +171,7 @@ void loop() {
 			q.init( (float)((quat[0] >> 16)/16384.0f),(float)((quat[1] >> 16)/16384.0f) ,(float)((quat[2] >> 16)/16384.0f) ,(float)((quat[3] >> 16)/16384.0f) );
 			a.init((float)(accel[0]/16384.0f),(float)(accel[1]/16384.0f),(float)(accel[2]/16384.0f));
 			//Math processing
-			//Generate a quaternion from a fusion of the magnetometer and gyro data.
-			zaxis=zaxis0.rotate(q);
-			fusedq=qmag.multiply(q);
-			q=fusedq;
+      mathprocess();
 			/*
 			if (i<254)
 			{
@@ -194,16 +193,29 @@ void loop() {
 		outputtimer=0;
 	}
 }
+void mathprocess()
+{
+    //Math processing
+    //Generate a quaternion from a fusion of the magnetometer and gyro data.
+    
+    
+    fusedq=qmag.multiply(q);
+    q=fusedq;   
+    zaxis=zaxis0.rotate(q);
+    qout=fusedq.multiply(qmag.conjugate());
+    a=a.rotate(q);
 
+}
 void serialout(){
 	// Update client with quaternions and some raw sensor data
-	Serial.print(q.w,4);
+  VectorFloat lastoutput=zaxis;
+	Serial.print(qout.w,4);
 	Serial.print('/');
-	Serial.print(q.x,4);
+	Serial.print(qout.x,4);
 	Serial.print('/');
-	Serial.print(q.y,4);
+	Serial.print(qout.y,4);
 	Serial.print('/');
-	Serial.print(q.z,4);
+	Serial.print(qout.z,4);
 	Serial.print('/');
 	Serial.print(magvec.x,4);
 	Serial.print('/');
@@ -219,11 +231,12 @@ void serialout(){
 	Serial.print('/');
 	Serial.print(yawradians,4);
 	Serial.print('/');
-	Serial.print(rmagvec.x,4);
+	Serial.print(lastoutput.x,4);
 	Serial.print('/');
-	Serial.print(rmagvec.y,4);
+	Serial.print(lastoutput.y,4);
 	Serial.print('/');
-	Serial.println(rmagvec.z,4);
+	Serial.println(lastoutput.z,4);
+  Serial.println('/');
 }
 void teensy_init(){
 	Serial.begin(57600);

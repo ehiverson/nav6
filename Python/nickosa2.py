@@ -132,13 +132,17 @@ while cond:
         #notice that mx and my are switched to acount for magnetometer orientation
         #mz is also negative.   
 
-        m[1]=int(b[4])/100.0
-        m[0]=int(b[5])/100.0
-        m[2]=-int(b[6])/100.0
-        print q
-        if not magcalibrate:
+        m[1]=float(b[4])/100.0
+        m[0]=float(b[5])/100.0
+        m[2]=-float(b[6])/100.0
+        
+        a[0]=float(b[7])
+        a[1]=float(b[8])
+        a[2]=float(b[9])
+        print b
+        #if not magcalibrate:
             #APPLY COMPASS CALIBRATION
-            m=calibratemag(m,offsets,invw) 
+            #m=calibratemag(m,offsets,invw) 
         g=gravity(q)
         
         a-=g
@@ -261,6 +265,7 @@ while cond:
         print b
         ser.close()
         raise
+        
     except:
         print "unknown error"
         cond=False
