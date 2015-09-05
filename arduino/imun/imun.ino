@@ -24,7 +24,7 @@ extern "C" {
 //Magnetometer State
 VectorFloat rmagvec,magvec,magvec2;
 //Alpha controls the lowpass filtering of the magnetometer. a higher value will result in faster but shakier magnetometer data.
-const float alpha=0.1;
+const float alpha=0.03;
 float yawradians=0;
 //Magnetometer Calibration
 static float magCalMatrix[9] = 
@@ -90,8 +90,7 @@ void setup() {
 	if ( initialize_mpu(gyro_orientation,dmp_update_rate,gyro_fsr,accel_fsr,compass_fsr) ) {
 	  mpu_initialized = true;
 	  Serial.print(F("Success"));
-	  boolean gyro_ok, accel_ok;
-	  run_mpu_self_test(gyro_ok,accel_ok);
+   run_mpu_self_test();
 	  enable_mpu();
 	}
 	else {
@@ -172,6 +171,7 @@ void loop() {
 			a.init((float)(accel[0]/16384.0f),(float)(accel[1]/16384.0f),(float)(accel[2]/16384.0f));
 			//Math processing
       mathprocess();
+      qout=fusedq;
 			/*
 			if (i<254)
 			{
@@ -199,11 +199,8 @@ void mathprocess()
     //Generate a quaternion from a fusion of the magnetometer and gyro data.
     
     
-    fusedq=qmag.multiply(q);
-    q=fusedq;   
-    zaxis=zaxis0.rotate(q);
-    qout=fusedq.multiply(qmag.conjugate());
-    a=a.rotate(q);
+    fusedq=qmag.multiply(q);   
+    a=a.rotate(qout);
 
 }
 void serialout(){
