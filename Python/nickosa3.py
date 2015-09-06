@@ -10,7 +10,7 @@ q3=y
 q4=z
 
 """
-magplot=False
+magplot=True
 magcalibrate=False
 magcalcheck=False
 
@@ -88,6 +88,7 @@ iovec4=np.array([1,0,0])
 #Loop variables.
 i=0
 cond=True
+v=0
 while cond:
     i+=1  
     try:
@@ -115,8 +116,8 @@ while cond:
         rm[1]=float(b[12])
         rm[2]=float(b[13])
         #a=rm        
-        print a.dot(a)
-    
+        print v
+        v+=a[0]
         
 
         proj=projectio(np.array([0,0,1]),m)
@@ -135,6 +136,7 @@ while cond:
         mag=axis.scatter(m[0],m[1],m[2],color='g')
         project=axis.scatter(proj[0],proj[1],proj[2],color='c')   
         accelline=axis.plot([0,a[0]], [0,a[1]],[0,a[2]],color='m')
+        accel=axis.scatter(a[0],a[1],a[2],color='m')        
         magline=axis.plot([0,m[0]], [0,m[1]],[0,m[2]],color='g')
         projline=axis.plot([0,proj[0]],[0,proj[1]],[0,proj[2]],color='c')     
         gpline=axis.plot([0,proj[0]],[0,proj[1]],[1,proj[2]],color='c')     
@@ -147,6 +149,7 @@ while cond:
         fig.canvas.draw()
         
         accelline[0].remove()
+        accel.remove()
         mag.remove()       
         project.remove()
         magline[0].remove()
@@ -160,8 +163,8 @@ while cond:
         
         #Optional plotting
         if magplot:
-            mspecial=axis3.plot([0,np.cos(head)],[0,np.sin(head)],color='b')
-            mspecial3=axis4.plot([0,np.cos(head)],[0,np.sin(head)],color='g')            
+            mspecial=axis3.plot([0,a[0]],[0,a[2]],color='b')
+            mspecial3=axis4.plot([0,a[1]],[0,a[2]],color='g')            
             fig2.canvas.draw()
             mspecial[0].remove()
             mspecial3[0].remove()

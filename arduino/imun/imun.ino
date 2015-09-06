@@ -140,7 +140,6 @@ void loop() {
 		
 		//Calculate quaternion form magnetometer data.
 		yawradians=atan2(magvec.x,magvec.y);
-		if (yawradians<0) yawradians+=6.2832;
 		qmag=qfromYaw(zaxis0,yawradians);		
     
 		//Reset magnetometer reading timer.
@@ -199,8 +198,10 @@ void mathprocess()
     //Generate a quaternion from a fusion of the magnetometer and gyro data.
     
     
-    fusedq=qmag.multiply(q);   
-    a=a.rotate(qout);
+    fusedq=qmag.multiply(q);  
+    a=a.rotate(fusedq);
+    //Subtract gravity
+    a=a.subtract(VectorFloat(0,0,1));
 
 }
 void serialout(){
