@@ -29,8 +29,6 @@ static struct hal_s hal = { 0 };
 #define COMPASS_ON      (0x04)
 /* Starting sampling rate. */
 #define DEFAULT_MPU_HZ    (100)
-#define MAX_NAV6_MPU_RATE (100)
-#define MIN_NAV6_MPU_RATE (4)
 /* Data requested by client. */
 #define PRINT_ACCEL     (0x01)
 #define PRINT_GYRO      (0x02)
@@ -69,7 +67,7 @@ void gyro_data_ready_cb(void) {
 	hal.new_gyro = 1;
 }
 
-boolean initialize_mpu(signed char gyro_orientation[9],unsigned short &dmp_update_rate, unsigned short &gyro_fsr, unsigned char &accel_fsr, unsigned short &compass_fsr) {
+boolean hal_initialize_mpu(signed char gyro_orientation[9],unsigned short &dmp_update_rate, unsigned short &gyro_fsr, unsigned char &accel_fsr, unsigned short &compass_fsr) {
 	int result;
 	struct int_param_s int_param;
 
@@ -90,7 +88,7 @@ boolean initialize_mpu(signed char gyro_orientation[9],unsigned short &dmp_updat
 	/* Wake up all sensors. */
 	mpu_set_sensors(INV_XYZ_GYRO | INV_XYZ_ACCEL | INV_XYZ_COMPASS);
 	/* Push both gyro and accel data into the FIFO. */
-	mpu_configure_fifo(INV_XYZ_GYRO | INV_XYZ_ACCEL);
+	mpu_configure_fifo(INV_XYZ_ACCEL);
 	mpu_set_sample_rate(DEFAULT_MPU_HZ);
 	
 	/* The compass sampling rate can be less than the gyro/accel sampling rate.
@@ -156,24 +154,20 @@ boolean initialize_mpu(signed char gyro_orientation[9],unsigned short &dmp_updat
 	return true;
 }
 
-void enable_mpu(){
+void hal_enable_mpu(){
 	mpu_set_dmp_state(1);  // This enables the DMP; at this point, interrupts should commence
 	hal.dmp_on = 1;
 }
-void disable_mpu() {
+void hal_disable_mpu() {
 	mpu_set_dmp_state(0);
 	hal.dmp_on = 0;
 }
 
 
-boolean run_mpu_self_test() {
-	boolean gyro_ok, accel_ok;
+boolean hal_run_gyro_self_test() {
 	int result;
 	long gyro[3], accel[3];
-	boolean success = false;
-
-	gyro_ok = false;
-	accel_ok = false;
+	boolean gyro_ok = false;
 	result = mpu_run_self_test(gyro, accel);
 	
 	if ((result & 0x1) != 0) {
@@ -186,7 +180,18 @@ boolean run_mpu_self_test() {
 		gyro[2] = (long)(gyro[2] * sens);
 		dmp_set_gyro_bias(gyro);
 	}
-	/*
+
+	return gyro_ok;
+}
+
+boolean hal_run_accel_self_test(long biases[3]) {
+	int result;
+	long gyro[3], accel[3];
+
+	boolean accel_ok = false;
+	result = mpu_run_self_test(gyro, accel);
+	
+	
 	//This section of code causes the orientation to be incorrect if the chip doesn't boot on a level surface.
 	if ((result & 0x2) != 0) {
 		// Accelerometer passed self test
@@ -197,11 +202,11 @@ boolean run_mpu_self_test() {
 		accel[1] *= accel_sens;
 		accel[2] *= accel_sens;
 		dmp_set_accel_bias(accel);
+		for (uint8_t i=0;i<3;i++) biases[i]=accel[i];
+		
 	}
-	*/
-	success = gyro_ok && accel_ok;
-
-	return success;
+	
+	return accel_ok;
 }
 /*
 float compassHeadingRadians(float mag_x, float mag_y, float mag_z, float pitch_radians, float roll_radians) {

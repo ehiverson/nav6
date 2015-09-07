@@ -24,7 +24,7 @@ extern "C" {
 //Magnetometer State
 VectorFloat rmagvec,magvec,magvec2;
 //Alpha controls the lowpass filtering of the magnetometer. a higher value will result in faster but shakier magnetometer data.
-const float alpha=0.03;
+const float alpha=0.02;
 float yawradians=0;
 //Magnetometer Calibration
 static float magCalMatrix[9] = 
@@ -38,17 +38,18 @@ static float magCalMatrix[9] =
 //Gyro/Accel/DMP State
 float temp_centigrade = 0.0;  // Gyro/Accel die temperature
 long curr_mpu_temp;
-unsigned long sensor_timestamp;
+unsigned long sensor_timestamp,sensor_timestamp2, interv;
 short compass_data[3];
 elapsedMillis elapsed_since_compass=0;
 elapsedMillis outputtimer=0;
-unsigned int compass_measurement_period=125;
+unsigned int compass_measurement_period=125; //milliseconds
 
 
 
 VectorFloat zaxis0(0,0,1);
 VectorFloat zaxis(0,0,1);
 VectorFloat a(0,0,0);
+VectorFloat v(0,0,0);
 VectorFloat acal(0,0,0);
 Quaternion q,qmag,fusedq,qout;
 
@@ -86,21 +87,21 @@ void setup() {
 	Serial.flush();
 	boolean mpu_initialized = false;
 	while ( !mpu_initialized ) {
-	digitalWrite(STATUS_LED, HIGH);
-	if ( initialize_mpu(gyro_orientation,dmp_update_rate,gyro_fsr,accel_fsr,compass_fsr) ) {
-	  mpu_initialized = true;
-	  Serial.print(F("Success"));
-   run_mpu_self_test();
-	  enable_mpu();
-	}
-	else {
-	  digitalWrite(STATUS_LED, LOW);
-	  Serial.print(F("Failed"));
-	  mpu_force_reset();
-	  delay(100);
-	  Serial.println(F("Re-initializing"));
-	  Serial.flush();
-	}
+		digitalWrite(STATUS_LED, HIGH);
+		if ( hal_initialize_mpu(gyro_orientation,dmp_update_rate,gyro_fsr,accel_fsr,compass_fsr) ) {
+			mpu_initialized = true;
+			Serial.print(F("Success"));
+			//hal_run_gyro_self_test();
+			hal_enable_mpu();
+		}
+		else {
+			digitalWrite(STATUS_LED, LOW);
+			Serial.print(F("Failed"));
+			mpu_force_reset();
+			delay(100);
+			Serial.println(F("Re-initializing"));
+			Serial.flush();
+		}
 	}
 	Serial.println();
 	Serial.println(F("Initialization Complete"));
@@ -116,7 +117,7 @@ void loop() {
 	if ( elapsed_since_compass>compass_measurement_period )
 	{
 		//Get raw magnetometer data and store it as a vector.
-		mpu_get_compass_reg(compass_data,&sensor_timestamp);
+		mpu_get_compass_reg(compass_data,NULL);
 		//Note that the x and y values are switched and the z value is negative. This is becuase the magnetometer has a different orientation than the accelerometer and gyro.
 		rmagvec.init(compass_data[1],compass_data[0],-compass_data[2]);
 		rmagvec=rmagvec.multiply(0.01);
@@ -171,24 +172,14 @@ void loop() {
 			//Math processing
       mathprocess();
       qout=fusedq;
-			/*
-			if (i<254)
-			{
-				i++;
-				acal=acal.add(a.subtract(zaxis));
-			}
-			else if (i==254)
-			{
-				acal=acal.multiply(1/255.0f);
-				i++;
-			}
-			a=a.subtract(acal);
-			*/
+      interv=sensor_timestamp-sensor_timestamp2;
+      sensor_timestamp2=sensor_timestamp;
 		}	
 	}
 	//Serial Output
 	if (outputtimer>20){
 		serialout();
+    //Serial.println(interv);
 		outputtimer=0;
 	}
 }
@@ -202,11 +193,12 @@ void mathprocess()
     a=a.rotate(fusedq);
     //Subtract gravity
     a=a.subtract(VectorFloat(0,0,1));
-
+    v=v.add(a.multiply(interv/1000.0f));
+    
 }
 void serialout(){
 	// Update client with quaternions and some raw sensor data
-  VectorFloat lastoutput=zaxis;
+  VectorFloat lastoutput=v;
 	Serial.print(qout.w,4);
 	Serial.print('/');
 	Serial.print(qout.x,4);
@@ -227,7 +219,7 @@ void serialout(){
 	Serial.print('/');
 	Serial.print(a.z,4);
 	Serial.print('/');
-	Serial.print(yawradians,4);
+	Serial.print(sensor_timestamp,4);
 	Serial.print('/');
 	Serial.print(lastoutput.x,4);
 	Serial.print('/');

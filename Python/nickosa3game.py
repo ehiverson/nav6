@@ -80,16 +80,15 @@ lpm2=np.array([0,0,0],dtype=float)
 yawoffset=0
 
 #Initial orientation vectors. These are rotated by the quaternion to provide visualization.
-iovec=np.array([0,0,1])
-iovec2=np.array([0,1,0])
-iovec3=np.array([0,1,1])
-iovec4=np.array([1,0,0])
+ovec=np.array([0,0,1])
+ovec2=np.array([0,1,0])
+ovec3=np.array([0,1,1])
+ovec4=np.array([1,0,0])
 
 #Loop variables.
 i=0
 cond=True
 v=0
-yaw2=0
 while cond:
     i+=1  
     try:
@@ -116,9 +115,9 @@ while cond:
         rm[0]=float(b[11])
         rm[1]=float(b[12])
         rm[2]=float(b[13])
-        a=rm
-        print a.dot(a)
-
+        a=rm        
+        print v
+        v+=a[0]
         
 
         proj=projectio(np.array([0,0,1]),m)
@@ -128,10 +127,10 @@ while cond:
 
 
         #Rotate orientation vectors for visualization
-        ovec=rotate2world(q,iovec)
-        ovec2=rotate2world(q,iovec2)
-        ovec3=rotate2world(q,iovec3)
-        ovec4=rotate2world(q,iovec4)
+        ovec=rotate2world(q,ovec)
+        ovec2=rotate2world(q,ovec2)
+        ovec3=rotate2world(q,ovec3)
+        ovec4=rotate2world(q,ovec4)
  
         #Plotting
         mag=axis.scatter(m[0],m[1],m[2],color='g')
