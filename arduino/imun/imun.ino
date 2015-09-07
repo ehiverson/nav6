@@ -9,9 +9,7 @@ extern "C" {
 #include <inv_mpu_dmp_motion_driver.h>
 }
 
-#define SDA_PIN A4
-#define SCL_PIN A5
-#define STATUS_LED 13
+
 
 #ifndef cbi
 #define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
@@ -58,6 +56,7 @@ unsigned char accel_fsr;  // accelerometer full-scale rate, in +/- Gs (possible 
 unsigned short dmp_update_rate; // update rate, in hZ (possible values are between 4 and 1000).  Default:  100
 unsigned short gyro_fsr;  // Gyro full-scale_rate, in +/- degrees/sec, possible values are 250, 500, 1000 or 2000.  Default:  2000
 unsigned short compass_fsr;
+long accel_biases[3]={17612800,1867760,-13008896};
 // The mounting matrix below tells the MPL how to rotate the raw data from the driver(s). The matrix below reflects the axis orientation of the MPU-6050 on the247 nav6 circuit board.
 static signed char gyro_orientation[9] = { 1, 0, 0,
                                            0, 1, 0,
@@ -91,7 +90,7 @@ void setup() {
 		if ( hal_initialize_mpu(gyro_orientation,dmp_update_rate,gyro_fsr,accel_fsr,compass_fsr) ) {
 			mpu_initialized = true;
 			Serial.print(F("Success"));
-			//hal_run_gyro_self_test();
+			mpu_set_accel_bias(accel_biases);
 			hal_enable_mpu();
 		}
 		else {
@@ -228,56 +227,4 @@ void serialout(){
 	Serial.println(lastoutput.z,4);
   Serial.println('/');
 }
-void teensy_init(){
-	Serial.begin(57600);
-	pinMode(21,OUTPUT);
-	pinMode(20,OUTPUT);
-	pinMode(15,OUTPUT);
-	digitalWrite(21,HIGH);
-	digitalWrite(20,LOW);
-	digitalWrite(15,LOW);
-	pinMode(14,INPUT);
-	delay(1000);
-	// reset I2C bus
-	// This ensures that if the nav6 was reset, but the devices
-	// on the I2C bus were not, that any transfer in progress do
-	// not hang the device/bus.  Since the MPU-6050 has a 1024-byte
-	// fifo, and there are 8 bits/byte, 10,000 clock edges
-	// are generated to ensure the fifo is completely cleared
-	// in the worst case.
-	// in the worst case.
 
-	pinMode(SDA_PIN, INPUT);
-	pinMode(SCL_PIN, OUTPUT);
-	pinMode(STATUS_LED, OUTPUT);
-
-	digitalWrite(STATUS_LED, LOW);
-	// Clock through up to 1000 bits
-	int x = 0;
-	for ( int i = 0; i < 10000; i++ ) {
-
-		digitalWrite(SCL_PIN, HIGH);
-		digitalWrite(SCL_PIN, LOW);
-		digitalWrite(SCL_PIN, HIGH);
-
-		x++;
-		if ( x == 8 ) {
-		  x = 0;
-		  // send a I2C stop signal
-		  digitalWrite(SDA_PIN, HIGH);
-		  digitalWrite(SDA_PIN, LOW);
-		}
-	}
-
-  // send a I2C stop signal
-  digitalWrite(SDA_PIN, HIGH);
-  digitalWrite(SDA_PIN, LOW);
-
-  // join I2C bus
-  Wire.begin();
-
-  // Disable internal I2C pull-ups
-  //cbi(PORTC, 4);
-  //cbi(PORTC, 5);
-  // initialize serial communication
-}

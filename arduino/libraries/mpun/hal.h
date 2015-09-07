@@ -2,6 +2,10 @@
 #ifndef _HALN
 #define _HALN
 
+#define SDA_PIN A4
+#define SCL_PIN A5
+#define STATUS_LED 13
+
 extern "C" {
 #include <inv_mpu.h>
 #include <inv_mpu_dmp_motion_driver.h>
@@ -196,11 +200,12 @@ boolean hal_run_accel_self_test(long biases[3]) {
 	if ((result & 0x2) != 0) {
 		// Accelerometer passed self test
 		accel_ok = true;
-		unsigned short accel_sens;
-		mpu_get_accel_sens(&accel_sens);
-		accel[0] *= accel_sens;
-		accel[1] *= accel_sens;
-		accel[2] *= accel_sens;
+		/*
+        for(uint8_t i = 0; i<3; i++) {
+        	accel[i] *= 2048.f; //convert to +-16G
+        	accel[i] = accel[i] >> 16;
+		}
+		*/
 		dmp_set_accel_bias(accel);
 		for (uint8_t i=0;i<3;i++) biases[i]=accel[i];
 		
@@ -208,6 +213,58 @@ boolean hal_run_accel_self_test(long biases[3]) {
 	
 	return accel_ok;
 }
+
+void teensy_init(){
+	Serial.begin(57600);
+	pinMode(21,OUTPUT);
+	pinMode(20,OUTPUT);
+	pinMode(15,OUTPUT);
+	digitalWrite(21,HIGH);
+	digitalWrite(20,LOW);
+	digitalWrite(15,LOW);
+	pinMode(14,INPUT);
+	delay(1000);
+	// reset I2C bus
+	// This ensures that if the nav6 was reset, but the devices
+	// on the I2C bus were not, that any transfer in progress do
+	// not hang the device/bus.  Since the MPU-6050 has a 1024-byte
+	// fifo, and there are 8 bits/byte, 10,000 clock edges
+	// are generated to ensure the fifo is completely cleared
+	// in the worst case.
+	// in the worst case.
+
+	pinMode(SDA_PIN, INPUT);
+	pinMode(SCL_PIN, OUTPUT);
+	pinMode(STATUS_LED, OUTPUT);
+
+	digitalWrite(STATUS_LED, LOW);
+	// Clock through up to 1000 bits
+	int x = 0;
+	for ( int i = 0; i < 10000; i++ ) {
+
+		digitalWrite(SCL_PIN, HIGH);
+		digitalWrite(SCL_PIN, LOW);
+		digitalWrite(SCL_PIN, HIGH);
+
+		x++;
+		if ( x == 8 ) {
+		  x = 0;
+		  // send a I2C stop signal
+		  digitalWrite(SDA_PIN, HIGH);
+		  digitalWrite(SDA_PIN, LOW);
+		}
+	}
+
+  // send a I2C stop signal
+  digitalWrite(SDA_PIN, HIGH);
+  digitalWrite(SDA_PIN, LOW);
+
+  // join I2C bus
+  Wire.begin();
+
+}
+
+
 /*
 float compassHeadingRadians(float mag_x, float mag_y, float mag_z, float pitch_radians, float roll_radians) {
 
