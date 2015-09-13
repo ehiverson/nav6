@@ -117,7 +117,7 @@ while cond:
         rm[1]=float(b[12])
         rm[2]=float(b[13])
         a=rm
-        print a.dot(a)
+        print a
 
         
 

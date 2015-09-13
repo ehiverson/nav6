@@ -56,7 +56,7 @@ unsigned char accel_fsr;  // accelerometer full-scale rate, in +/- Gs (possible 
 unsigned short dmp_update_rate; // update rate, in hZ (possible values are between 4 and 1000).  Default:  100
 unsigned short gyro_fsr;  // Gyro full-scale_rate, in +/- degrees/sec, possible values are 250, 500, 1000 or 2000.  Default:  2000
 unsigned short compass_fsr;
-long accel_biases[3]={17612800,1867760,-13008896};
+long accel_biases[3]={0,-600,725};//568};
 // The mounting matrix below tells the MPL how to rotate the raw data from the driver(s). The matrix below reflects the axis orientation of the MPU-6050 on the247 nav6 circuit board.
 static signed char gyro_orientation[9] = { 1, 0, 0,
                                            0, 1, 0,

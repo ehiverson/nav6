@@ -188,30 +188,28 @@ boolean hal_run_gyro_self_test() {
 	return gyro_ok;
 }
 
-boolean hal_run_accel_self_test(long biases[3]) {
-	int result;
-	long gyro[3], accel[3];
-
-	boolean accel_ok = false;
-	result = mpu_run_self_test(gyro, accel);
-	
-	
-	//This section of code causes the orientation to be incorrect if the chip doesn't boot on a level surface.
-	if ((result & 0x2) != 0) {
-		// Accelerometer passed self test
-		accel_ok = true;
-		/*
-        for(uint8_t i = 0; i<3; i++) {
-        	accel[i] *= 2048.f; //convert to +-16G
-        	accel[i] = accel[i] >> 16;
-		}
-		*/
-		dmp_set_accel_bias(accel);
-		for (uint8_t i=0;i<3;i++) biases[i]=accel[i];
-		
+void hal_run_accel_self_test(long *biases) {
+	short accel[3];
+	long acceltotal[3]={0,0,0};
+	for (uint8_t i=0;i<255;i++)
+	{
+		mpu_get_accel_reg(accel,NULL);
+		for (uint8_t j=0;j<3;j++) acceltotal[j]+= accel[j];
 	}
+	for (uint8_t j=0;j<3;j++) acceltotal[j]/=255;
+	unsigned short sens;
+	mpu_get_accel_sens(&sens);
+	acceltotal[2]-=sens;
+	//This section of code causes the orientation to be incorrect if the chip doesn't boot on a level surface.
+
+	//unsigned short accel_sens;
+	//mpu_get_accel_sens(&accel_sens);
+	//accel[0] /= accel_sens;
+	//accel[1] /= accel_sens;
+	//accel[2] /= accel_sens;
+	for (uint8_t i=0;i<3;i++) {acceltotal[i]*=-4;biases[i]=acceltotal[i];}//The four here is based on experiment I don't know why it works.
+	mpu_set_accel_bias(acceltotal);
 	
-	return accel_ok;
 }
 
 void teensy_init(){

@@ -2,14 +2,12 @@
 #include <i2c_t3.h>
 #include <helper_3dmathn.h>
 #include <hal.h>
+#include <teensy_port.h>
 extern "C" {
 #include <inv_mpu.h>
 #include <inv_mpu_dmp_motion_driver.h>
 }
 
-#define SDA_PIN A4
-#define SCL_PIN A5
-#define STATUS_LED 13
 
 //Gyro/Accel/DMP Configuration
 unsigned char accel_fsr;  // accelerometer full-scale rate, in +/- Gs (possible values are 2, 4, 8 or 16).  Default:  2
@@ -22,11 +20,12 @@ static signed char gyro_orientation[9] = { 1, 0, 0,
                                            0, 0, 1
                                          };
 
-long biases[3];
+long biases[3],abias[3];
 elapsedMillis outputtimer=0;
 VectorFloat a(0,0,0);
 VectorFloat v(0,0,0);
-short gyro[3], accel[3], sensors;
+short gyro[3], accel[3],fg[3], sensors;
+uint8_t data[3];
 unsigned char more = 0;
 long quat[4];
 unsigned long sensor_timestamp;
@@ -54,7 +53,8 @@ void setup() {
     if ( hal_initialize_mpu(gyro_orientation,dmp_update_rate,gyro_fsr,accel_fsr,compass_fsr) ) {
       mpu_initialized = true;
       Serial.print(F("Success"));
-      //hal_run_accel_self_test(biases);
+      hal_run_accel_self_test(biases);
+      for (uint8_t i=0;i<3;i++) {Serial.println(biases[i]);}
       hal_enable_mpu();
     }
     else {
@@ -68,17 +68,18 @@ void setup() {
   }
   Serial.println();
   Serial.println(F("Initialization Complete. Accel biases are:"));
-  for (uint8_t i=0;i<3;i++) Serial.println(biases[i]);
   Serial.flush();
  
   digitalWrite(STATUS_LED, LOW);
+  
 }
-
+int i=0;
 void loop() {
 	// put your main code here, to run repeatedly:
+	/*
 	if (hal.new_gyro && hal.dmp_on)
 	{
-		/* This function gets new data from the FIFO when the DMP is in
+		 This function gets new data from the FIFO when the DMP is in
 		 * use. The FIFO can contain any combination of gyro, accel,
 		 * quaternion, and gesture data. The sensors parameter tells the
 		 * caller which data fields were actually populated with new data.
@@ -89,7 +90,7 @@ void loop() {
 		 * via a callback (assuming that a callback function was properly
 		 * registered). The more parameter is non-zero if there are
 		 * leftover packets in the FIFO.
-		 */
+		 
 		int success = dmp_read_fifo(gyro, accel, quat, &sensor_timestamp, &sensors,&more);
 		if (!more)
 		  hal.new_gyro = 0;
@@ -101,6 +102,7 @@ void loop() {
 			v=a;
 		}	
 	}
+	
 	//Serial Output
 	if (outputtimer>20){
 		Serial.print(v.x);
@@ -112,5 +114,19 @@ void loop() {
 		Serial.println(v.magnitude());
 		outputtimer=0;
 	}
+	*/
+	for (int i=0;i<30;i++){
+		abias[0]=i*1000;
+		mpu_set_accel_bias(abias);
+		delay(100);
+		mpu_get_accel_reg(accel,NULL);
+		
+		Serial.print(accel[0]);Serial.print(',');Serial.println(abias[0]);
+		abias[0]=-i*1000;
+		mpu_set_accel_bias(abias);
+		delay(100);
+	}
+		
 
+	
 }
