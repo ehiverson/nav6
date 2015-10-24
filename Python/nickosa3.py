@@ -26,6 +26,18 @@ import numpy as np
 import scipy.linalg as la
 from pylab import *
 from mpu9150mathfuncs import *
+import time
+
+def _readline():
+    a=''
+    while True:
+        b=ser.read()
+        if b=='+':
+            break
+    while True:
+        a+=ser.read()
+        if a[-1]=='\r':           
+            return a
 
 #Initiate plotting objects 
 fig = plt.figure()
@@ -66,7 +78,7 @@ if magplot:
 
 
 #Open serial communication
-ser=serial.Serial(port="COM12",timeout=.5)
+ser=serial.Serial(port="COM14",timeout=.5)
 
 
 magarr=np.array([0,0,0])
@@ -95,9 +107,8 @@ while cond:
     try:
         #Serial data transfer        
         ser.flushInput()
-        b=ser.readline()
+        b=_readline()
         b=b[:-2].split('/')
-    
         q[0]=b[0]
         q[1]=b[1]
         q[2]=b[2]
@@ -177,12 +188,12 @@ while cond:
     except KeyboardInterrupt:
         cond=False
         ser.close()
-
+'''
     except:
         print "unknown error"
         cond=False
         ser.close()
-
+'''
 plt.close(fig)
 if magplot:
     plt.close(fig2)

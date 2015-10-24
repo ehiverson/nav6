@@ -214,6 +214,7 @@ void hal_run_accel_self_test(long *biases) {
 
 void teensy_init(){
 	Serial.begin(57600);
+	Serial1.begin(9600);
 	pinMode(21,OUTPUT);
 	pinMode(20,OUTPUT);
 	pinMode(15,OUTPUT);

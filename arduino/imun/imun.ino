@@ -2,8 +2,12 @@
 //{
 #define EMPL_TARGET_ATMEGA328
 #include <i2c_t3.h>
+#include <Servo.h>
+#include <imun_header.h>
+
 #include <helper_3dmathn.h>
-#include <hal.h>
+#include <imun_hal.h>
+
 extern "C" {
 #include <inv_mpu.h>
 #include <inv_mpu_dmp_motion_driver.h>
@@ -47,6 +51,7 @@ unsigned int compass_measurement_period=125; //milliseconds
 VectorFloat zaxis0(0,0,1);
 VectorFloat zaxis(0,0,1);
 VectorFloat a(0,0,0);
+VectorFloat g(0,0,0);
 VectorFloat v(0,0,0);
 VectorFloat acal(0,0,0);
 Quaternion q,qmag,fusedq,qout;
@@ -168,6 +173,7 @@ void loop() {
 		{
 			q.init( (float)((quat[0] >> 16)/16384.0f),(float)((quat[1] >> 16)/16384.0f) ,(float)((quat[2] >> 16)/16384.0f) ,(float)((quat[3] >> 16)/16384.0f) );
 			a.init((float)(accel[0]/16384.0f),(float)(accel[1]/16384.0f),(float)(accel[2]/16384.0f));
+      g.init((float)(gyro[0]/16384.0f),(float)(gyro[1]/16384.0f),(float)(gyro[2]/16384.0f));
 			//Math processing
       mathprocess();
       qout=fusedq;
@@ -198,33 +204,34 @@ void mathprocess()
 void serialout(){
 	// Update client with quaternions and some raw sensor data
   VectorFloat lastoutput=v;
-	Serial.print(qout.w,4);
-	Serial.print('/');
-	Serial.print(qout.x,4);
-	Serial.print('/');
-	Serial.print(qout.y,4);
-	Serial.print('/');
-	Serial.print(qout.z,4);
-	Serial.print('/');
-	Serial.print(magvec.x,4);
-	Serial.print('/');
-	Serial.print(magvec.y,4);
-	Serial.print('/');
-	Serial.print(magvec.z,4);
-	Serial.print('/');
-	Serial.print(a.x,4);
-	Serial.print('/');
-	Serial.print(a.y,4);
-	Serial.print('/');
-	Serial.print(a.z,4);
-	Serial.print('/');
-	Serial.print(sensor_timestamp,4);
-	Serial.print('/');
-	Serial.print(lastoutput.x,4);
-	Serial.print('/');
-	Serial.print(lastoutput.y,4);
-	Serial.print('/');
-	Serial.println(lastoutput.z,4);
-  Serial.println('/');
+  Serial1.print('+');//start character
+	Serial1.print(qout.w,4);
+	Serial1.print('/');
+	Serial1.print(qout.x,4);
+	Serial1.print('/');
+	Serial1.print(qout.y,4);
+	Serial1.print('/');
+	Serial1.print(qout.z,4);
+	Serial1.print('/');
+	Serial1.print(magvec.x,4);
+	Serial1.print('/');
+	Serial1.print(magvec.y,4);
+	Serial1.print('/');
+	Serial1.print(magvec.z,4);
+	Serial1.print('/');
+	Serial1.print(a.x,4);
+	Serial1.print('/');
+	Serial1.print(a.y,4);
+	Serial1.print('/');
+	Serial1.print(a.z,4);
+	Serial1.print('/');
+	Serial1.print(sensor_timestamp,4);
+	Serial1.print('/');
+	Serial1.print(lastoutput.x,4);
+	Serial1.print('/');
+	Serial1.print(lastoutput.y,4);
+	Serial1.print('/');
+	Serial1.print(lastoutput.z,4);
+  Serial1.println('/');
 }
 
