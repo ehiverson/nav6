@@ -5,6 +5,7 @@
 #define MAX_SERVO_TIME 2000
 #define MIN_SERVO_TIME 1000
 #include <Arduino.h>
+#include <Servo.h>
 
 const uint16_t timeDifference=MAX_SERVO_TIME-MIN_SERVO_TIME;
 
@@ -14,7 +15,7 @@ class ImunMotor
 	Servo motor;
 	public:
 		uint8_t getThrottle();
-		void init(uint8_t pin);
+		 ImunMotor(uint8_t pin);
 		void setThrottle(float newThrottle); 
 		void escCalibration();
 };
@@ -24,7 +25,7 @@ uint8_t ImunMotor::getThrottle()
 	return throttle;
 }
 
-void ImunMotor::init(uint8_t pin)
+ImunMotor::ImunMotor(uint8_t pin)
 {
 	motor.attach(pin,MIN_SERVO_TIME,MAX_SERVO_TIME);
 }

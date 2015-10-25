@@ -1,12 +1,10 @@
 //Includes
 //{
 #define EMPL_TARGET_ATMEGA328
-#include <i2c_t3.h>
-#include <Servo.h>
+#include "i2c_t3.h"
+#include "Servo.h"
 #include <imun_header.h>
 
-#include <helper_3dmathn.h>
-#include <imun_hal.h>
 
 extern "C" {
 #include <inv_mpu.h>
