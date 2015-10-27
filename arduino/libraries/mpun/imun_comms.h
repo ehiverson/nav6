@@ -11,8 +11,7 @@ class ImunComms
 
 };
 
-ImunComms::ImunComms(Stream& serial):
-	_serial(serial)
+ImunComms::ImunComms(Stream& serial):_serial(serial)
 {
 
 }
