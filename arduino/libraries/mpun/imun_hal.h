@@ -71,7 +71,7 @@ void gyro_data_ready_cb(void) {
 	hal.new_gyro = 1;
 }
 
-boolean hal_initialize_mpu(signed char gyro_orientation[9],unsigned short &dmp_update_rate, unsigned short &gyro_fsr, unsigned char &accel_fsr, unsigned short &compass_fsr) {
+boolean hal_initialize_mpu(signed char gyro_orientation[9],unsigned short &dmp_update_rate, unsigned short &gyro_fsr, unsigned char &accel_fsr, unsigned short &compass_fsr){
 	int result;
 	struct int_param_s int_param;
 
@@ -157,7 +157,6 @@ boolean hal_initialize_mpu(signed char gyro_orientation[9],unsigned short &dmp_u
 	dmp_set_fifo_rate(DEFAULT_MPU_HZ);
 	return true;
 }
-
 void hal_enable_mpu(){
 	mpu_set_dmp_state(1);  // This enables the DMP; at this point, interrupts should commence
 	hal.dmp_on = 1;
@@ -187,8 +186,7 @@ boolean hal_run_gyro_self_test() {
 
 	return gyro_ok;
 }
-
-void hal_run_accel_self_test(long *biases) {
+void hal_run_accel_self_test(long *biases){
 	short accel[3];
 	long acceltotal[3]={0,0,0};
 	for (uint8_t i=0;i<255;i++)
@@ -200,36 +198,17 @@ void hal_run_accel_self_test(long *biases) {
 	unsigned short sens;
 	mpu_get_accel_sens(&sens);
 	acceltotal[2]-=sens;
-	//This section of code causes the orientation to be incorrect if the chip doesn't boot on a level surface.
-
-	//unsigned short accel_sens;
-	//mpu_get_accel_sens(&accel_sens);
-	//accel[0] /= accel_sens;
-	//accel[1] /= accel_sens;
-	//accel[2] /= accel_sens;
 	for (uint8_t i=0;i<3;i++) {acceltotal[i]*=-4;biases[i]=acceltotal[i];}//The four here is based on experiment I don't know why it works.
 	mpu_set_accel_bias(acceltotal);
 	
 }
-
-void teensy_init(){
-	Serial.begin(57600);
-	Serial1.begin(9600);
-	pinMode(21,OUTPUT);
-	pinMode(20,OUTPUT);
-	pinMode(15,OUTPUT);
-	digitalWrite(21,HIGH);
-	digitalWrite(20,LOW);
-	digitalWrite(15,LOW);
-	pinMode(14,INPUT);
-	delay(1000);
+void teensyI2cInit(){
 	// reset I2C bus
 	// This ensures that if the nav6 was reset, but the devices
 	// on the I2C bus were not, that any transfer in progress do
 	// not hang the device/bus.  Since the MPU-6050 has a 1024-byte
 	// fifo, and there are 8 bits/byte, 10,000 clock edges
 	// are generated to ensure the fifo is completely cleared
-	// in the worst case.
 	// in the worst case.
 
 	pinMode(SDA_PIN, INPUT);
@@ -262,38 +241,19 @@ void teensy_init(){
   Wire.begin();
 
 }
-
-
-/*
-float compassHeadingRadians(float mag_x, float mag_y, float mag_z, float pitch_radians, float roll_radians) {
-
-  float tilt_compensated_heading;
-  float MAG_X;
-  float MAG_Y;
-  float cos_roll;
-  float sin_roll;
-  float cos_pitch;
-  float sin_pitch;
-  
-  cos_roll = cos(roll_radians);
-  sin_roll = sin(roll_radians);
-  cos_pitch = cos(pitch_radians);
-  sin_pitch = sin(pitch_radians);
-
-		
-
- // Tilt compensated Magnetic field X:
-  MAG_X = xr*cos_pitch+yr*sin_roll*sin_pitch+zr*cos_roll*sin_pitch;
-  // Tilt compensated Magnetic field Y:
-  MAG_Y = yr*cos_roll-zr*sin_roll;
-  // Magnetic Heading
-  tilt_compensated_heading = atan2(MAG_Y,MAG_X);  // TODO:  Review - why negative Y?
-
-	MAG_X = mag_x * cos_pitch + mag_z * sin_pitch;
-	MAG_Y = mag_x * sin_roll * sin_pitch + mag_y * cos_roll - mag_z * sin_roll * cos_pitch;
-	tilt_compensated_heading = atan2(MAG_Y,MAG_X);
-	
-  return tilt_compensated_heading;
+void teensyInit(){
+	Serial.begin(57600);
+	Serial1.begin(115200);
+	pinMode(21,OUTPUT);
+	pinMode(20,OUTPUT);
+	pinMode(15,OUTPUT);
+	digitalWrite(21,HIGH);
+	digitalWrite(20,LOW);
+	digitalWrite(15,LOW);
+	pinMode(14,INPUT);
+	teensyI2cInit();
 }
-*/
-#endif				/* _HALN */
+
+	
+
+#endif	// _HALN 

@@ -29,33 +29,50 @@ from mpu9150mathfuncs import *
 import time
 import Queue
 import threading
+import struct
 
 
 
 def serialIn(comport,queueobject):
     cond=True
-    ser=serial.Serial(port=comport,timeout=.5) 
-    start=time.clock()
-    def _readline():
-        a=''
+    ser=serial.Serial(port=comport,timeout=.5,baudrate=115200) 
+    packetlength=20
+    starttime=time.clock()
+    while cond:
+        
         while True:
             b=ser.read()
             if b=='+':
                 break
-        while True:
-            a+=ser.read()
-            if a[-1]=='\r':
-                return a[:-2]
-    while cond:
-        b=_readline()
-        b=b[:-2].split('/')
-        queueobject.put(b)
-        now=time.clock()
-        print 1/(now-start)
-        start=now
+        b=ser.read()
+        packetlength=struct.unpack('b',b)[0]
+        b=''
+        for i in range(packetlength):
+            b+=ser.read()
+        blist=[]  
+        for i in range(packetlength//4):
+            blist.append(b[i*4:i*4+4])
+        for i in range(len(blist)):
+            blist[i]=struct.unpack('f',blist[i])[0]
+    
+    
+        try:
+            queueobject.put(blist,block=False)
+        except:
+            pass
+        print 1/(time.clock()-starttime)
+        starttime=time.clock()
+        try:
+            out=exitqueue.get(block=False)
+        except:
+            continue      
+        if out=='exit':
+            ser.close()  
+            print "serial closing"
+            return
         
-        
-queue=Queue.Queue()
+queue=Queue.LifoQueue(maxsize=10)
+exitqueue=Queue.Queue()
 serialThread=threading.Thread(target=serialIn,args=('COM14',queue))
 
 #Initiate plotting objects 
@@ -120,7 +137,7 @@ cond=True
 v=0
 yaw2=0
 serialThread.start()
-'''
+
 while cond: 
     try:
         #Serial data transfer        
@@ -137,14 +154,14 @@ while cond:
         a[0]=float(b[7])
         a[1]=float(b[8])
         a[2]=float(b[9])
-
+        '''
         yaw=float (b[10])
         
         rm[0]=float(b[11])
         rm[1]=float(b[12])
         rm[2]=float(b[13])
         a=rm
-
+        '''
         
 
         proj=projectio(np.array([0,0,1]),m)
@@ -200,19 +217,17 @@ while cond:
         if magcalibrate or magcalcheck:
             magarr=np.vstack([magarr,m])
         
-    except KeyboardInterrupt:
-        cond=False
-        ser.close()
 
     except:
-        print "unknown error"
         cond=False
-        ser.close()
+        exitqueue.put('exit')
+        time.sleep(0.1)
+        raise
+       
 
 plt.close(fig)
 if magplot:
     plt.close(fig2)
-ser.close()
 
 if magcalibrate or magcalcheck:
     #run a magnetometer calibration 
@@ -248,5 +263,3 @@ if magcalibrate or magcalcheck:
     
     
     plt.show()
-
-'''

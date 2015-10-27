@@ -19,7 +19,7 @@ extern "C" {
 //}
 
 // MPU Calibration
-
+ImunComms comms(Serial1);
 
 //Magnetometer State
 VectorFloat rmagvec,magvec,magvec2;
@@ -72,7 +72,7 @@ unsigned char more = 0;
 long quat[4];
 
 void setup() {
-	teensy_init();
+	teensyInit();
 	Serial.println(F("Nick IMU firmware"));
 
 
@@ -182,7 +182,6 @@ void loop() {
 	//Serial Output
 	if (outputtimer>20){
 		serialout();
-    //Serial.println(interv);
 		outputtimer=0;
 	}
 }
@@ -190,8 +189,6 @@ void mathprocess()
 {
     //Math processing
     //Generate a quaternion from a fusion of the magnetometer and gyro data.
-    
-    
     fusedq=qmag.multiply(q);  
     a=a.rotate(fusedq);
     //Subtract gravity
@@ -201,35 +198,21 @@ void mathprocess()
 }
 void serialout(){
 	// Update client with quaternions and some raw sensor data
-  VectorFloat lastoutput=v;
-  Serial1.print('+');//start character
-	Serial1.print(qout.w,4);
-	Serial1.print('/');
-	Serial1.print(qout.x,4);
-	Serial1.print('/');
-	Serial1.print(qout.y,4);
-	Serial1.print('/');
-	Serial1.print(qout.z,4);
-	Serial1.print('/');
-	Serial1.print(magvec.x,4);
-	Serial1.print('/');
-	Serial1.print(magvec.y,4);
-	Serial1.print('/');
-	Serial1.print(magvec.z,4);
-	Serial1.print('/');
-	Serial1.print(a.x,4);
-	Serial1.print('/');
-	Serial1.print(a.y,4);
-	Serial1.print('/');
-	Serial1.print(a.z,4);
-	Serial1.print('/');
-	Serial1.print(sensor_timestamp,4);
-	Serial1.print('/');
-	Serial1.print(lastoutput.x,4);
-	Serial1.print('/');
-	Serial1.print(lastoutput.y,4);
-	Serial1.print('/');
-	Serial1.print(lastoutput.z,4);
-  Serial1.println('/');
+  comms._serial.write('+');
+
+  comms._serial.write((char)40);
+  comms.transmitBytes(q.w);
+  comms.transmitBytes(q.x);
+  comms.transmitBytes(q.y);
+  comms.transmitBytes(q.z);
+  comms.transmitBytes(magvec.x);
+  comms.transmitBytes(magvec.y);
+  comms.transmitBytes(magvec.z);
+  comms.transmitBytes(a.x);
+  comms.transmitBytes(a.y);
+  comms.transmitBytes(a.z);
+
+
+
 }
 

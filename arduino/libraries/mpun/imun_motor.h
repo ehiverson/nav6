@@ -15,7 +15,7 @@ class ImunMotor
 	Servo motor;
 	public:
 		uint8_t getThrottle();
-		 ImunMotor(uint8_t pin);
+		ImunMotor(uint8_t pin);
 		void setThrottle(float newThrottle); 
 		void escCalibration();
 };
@@ -47,14 +47,19 @@ class ImunQuadMotor
 {
 	float _thrust=0;
 	float _yaw;
+	float _pitch;
+	float _roll;
 	ImunMotor _m1,_m2,_m3,_m4;
 	public:
-		void init(ImunMotor motor1,ImunMotor motor2,ImunMotor motor3,ImunMotor motor4);
+		ImunQuadMotor(ImunMotor motor1,ImunMotor motor2,ImunMotor motor3,ImunMotor motor4);
 		void setYaw(float yaw);
 		void setThrust(float thrust);
+		void setPitch(float pitch);
+		void setRoll(float roll);
+		void setMotors();
 };
 
-void ImunQuadMotor::init(ImunMotor motor1,ImunMotor motor2,ImunMotor motor3,ImunMotor motor4)//1=front left 2=front right 3=back left 4= back right
+ImunQuadMotor::ImunQuadMotor(ImunMotor motor1,ImunMotor motor2,ImunMotor motor3,ImunMotor motor4)//1=front left 2=front right 3=back left 4= back right
 {
 	_m1=motor1;
 	_m2=motor2;
@@ -65,21 +70,17 @@ void ImunQuadMotor::init(ImunMotor motor1,ImunMotor motor2,ImunMotor motor3,Imun
 void ImunQuadMotor::setYaw(float yaw)
 {
 	_yaw=yaw;
-	_m1.setThrottle(_thrust+yaw*_thrust);
-	_m3.setThrottle(_thrust+yaw*_thrust);
-	
-	_m2.setThrottle(_thrust-yaw*_thrust);
-	_m4.setThrottle(_thrust-yaw*_thrust);
-	
 }
 void ImunQuadMotor::setThrust(float thrust)
 {
 	_thrust=thrust;
-	_m1.setThrottle(_thrust);
-	_m3.setThrottle(_thrust);
-	
-	_m2.setThrottle(_thrust);
-	_m4.setThrottle(_thrust);
 }	
+void ImunQuadMotor::setMotors(){
+	_m1->setThrottle(_thrust+_yaw+_pitch+_roll);
+	_m2.setThrottle(_thrust-_yaw+_pitch-_roll);
+	_m3.setThrottle(_thrust+_yaw-_pitch+_roll);	
+	_m4.setThrottle(_thrust-_yaw-_pitch-_roll);
+}
+
 
 #endif /*_IMUN_MOTOR_ */

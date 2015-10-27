@@ -5,28 +5,23 @@
 class ImunComms
 {
 	public:
-		ImunComms(HardwareSerial& serial);
-		void floatToBytes(float in);
-	private:
-		HardwareSerial& _serial;
+		ImunComms(Stream& serial);
+		void transmitBytes(float in);
+		Stream& _serial;
 
 };
 
-ImunComms::ImunComms(HardwareSerial& serial):
+ImunComms::ImunComms(Stream& serial):
 	_serial(serial)
 {
-
 
 }
 
 
-void ImunComms::floatToBytes(float in)
+void ImunComms::transmitBytes(float in)
 {
-	uint32_t b=(uint32_t)in;
-	uint32_t* a=(uint32_t*)&b;
-	for (int i=0;i<4;i++){	
-		_serial.write(*(a+i));
-	}
+	unsigned char const *p=(unsigned char const *)&in;
+	_serial.write(p,sizeof(float));
 }
 
 
