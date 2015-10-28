@@ -2,6 +2,10 @@
 #ifndef _HALN
 #define _HALN
 
+#define SDA_PIN A4
+#define SCL_PIN A5
+#define STATUS_LED 13
+
 extern "C" {
 #include <inv_mpu.h>
 #include <inv_mpu_dmp_motion_driver.h>
@@ -29,8 +33,6 @@ static struct hal_s hal = { 0 };
 #define COMPASS_ON      (0x04)
 /* Starting sampling rate. */
 #define DEFAULT_MPU_HZ    (100)
-#define MAX_NAV6_MPU_RATE (100)
-#define MIN_NAV6_MPU_RATE (4)
 /* Data requested by client. */
 #define PRINT_ACCEL     (0x01)
 #define PRINT_GYRO      (0x02)
@@ -69,7 +71,7 @@ void gyro_data_ready_cb(void) {
 	hal.new_gyro = 1;
 }
 
-boolean initialize_mpu(signed char gyro_orientation[9],unsigned short &dmp_update_rate, unsigned short &gyro_fsr, unsigned char &accel_fsr, unsigned short &compass_fsr) {
+boolean hal_initialize_mpu(signed char gyro_orientation[9],unsigned short &dmp_update_rate, unsigned short &gyro_fsr, unsigned char &accel_fsr, unsigned short &compass_fsr){
 	int result;
 	struct int_param_s int_param;
 
@@ -90,7 +92,7 @@ boolean initialize_mpu(signed char gyro_orientation[9],unsigned short &dmp_updat
 	/* Wake up all sensors. */
 	mpu_set_sensors(INV_XYZ_GYRO | INV_XYZ_ACCEL | INV_XYZ_COMPASS);
 	/* Push both gyro and accel data into the FIFO. */
-	mpu_configure_fifo(INV_XYZ_GYRO | INV_XYZ_ACCEL);
+	mpu_configure_fifo(INV_XYZ_ACCEL);
 	mpu_set_sample_rate(DEFAULT_MPU_HZ);
 	
 	/* The compass sampling rate can be less than the gyro/accel sampling rate.
@@ -155,25 +157,20 @@ boolean initialize_mpu(signed char gyro_orientation[9],unsigned short &dmp_updat
 	dmp_set_fifo_rate(DEFAULT_MPU_HZ);
 	return true;
 }
-
-void enable_mpu(){
+void hal_enable_mpu(){
 	mpu_set_dmp_state(1);  // This enables the DMP; at this point, interrupts should commence
 	hal.dmp_on = 1;
 }
-void disable_mpu() {
+void hal_disable_mpu() {
 	mpu_set_dmp_state(0);
 	hal.dmp_on = 0;
 }
 
 
-boolean run_mpu_self_test() {
-	boolean gyro_ok, accel_ok;
+boolean hal_run_gyro_self_test() {
 	int result;
 	long gyro[3], accel[3];
-	boolean success = false;
-
-	gyro_ok = false;
-	accel_ok = false;
+	boolean gyro_ok = false;
 	result = mpu_run_self_test(gyro, accel);
 	
 	if ((result & 0x1) != 0) {
@@ -186,53 +183,77 @@ boolean run_mpu_self_test() {
 		gyro[2] = (long)(gyro[2] * sens);
 		dmp_set_gyro_bias(gyro);
 	}
-	/*
-	//This section of code causes the orientation to be incorrect if the chip doesn't boot on a level surface.
-	if ((result & 0x2) != 0) {
-		// Accelerometer passed self test
-		accel_ok = true;
-		unsigned short accel_sens;
-		mpu_get_accel_sens(&accel_sens);
-		accel[0] *= accel_sens;
-		accel[1] *= accel_sens;
-		accel[2] *= accel_sens;
-		dmp_set_accel_bias(accel);
+
+	return gyro_ok;
+}
+void hal_run_accel_self_test(long *biases){
+	short accel[3];
+	long acceltotal[3]={0,0,0};
+	for (uint8_t i=0;i<255;i++)
+	{
+		mpu_get_accel_reg(accel,NULL);
+		for (uint8_t j=0;j<3;j++) acceltotal[j]+= accel[j];
 	}
-	*/
-	success = gyro_ok && accel_ok;
-
-	return success;
-}
-/*
-float compassHeadingRadians(float mag_x, float mag_y, float mag_z, float pitch_radians, float roll_radians) {
-
-  float tilt_compensated_heading;
-  float MAG_X;
-  float MAG_Y;
-  float cos_roll;
-  float sin_roll;
-  float cos_pitch;
-  float sin_pitch;
-  
-  cos_roll = cos(roll_radians);
-  sin_roll = sin(roll_radians);
-  cos_pitch = cos(pitch_radians);
-  sin_pitch = sin(pitch_radians);
-
-		
-
- // Tilt compensated Magnetic field X:
-  MAG_X = xr*cos_pitch+yr*sin_roll*sin_pitch+zr*cos_roll*sin_pitch;
-  // Tilt compensated Magnetic field Y:
-  MAG_Y = yr*cos_roll-zr*sin_roll;
-  // Magnetic Heading
-  tilt_compensated_heading = atan2(MAG_Y,MAG_X);  // TODO:  Review - why negative Y?
-
-	MAG_X = mag_x * cos_pitch + mag_z * sin_pitch;
-	MAG_Y = mag_x * sin_roll * sin_pitch + mag_y * cos_roll - mag_z * sin_roll * cos_pitch;
-	tilt_compensated_heading = atan2(MAG_Y,MAG_X);
+	for (uint8_t j=0;j<3;j++) acceltotal[j]/=255;
+	unsigned short sens;
+	mpu_get_accel_sens(&sens);
+	acceltotal[2]-=sens;
+	for (uint8_t i=0;i<3;i++) {acceltotal[i]*=-4;biases[i]=acceltotal[i];}//The four here is based on experiment I don't know why it works.
+	mpu_set_accel_bias(acceltotal);
 	
-  return tilt_compensated_heading;
 }
-*/
-#endif				/* _HALN */
+void teensyI2cInit(){
+	// reset I2C bus
+	// This ensures that if the nav6 was reset, but the devices
+	// on the I2C bus were not, that any transfer in progress do
+	// not hang the device/bus.  Since the MPU-6050 has a 1024-byte
+	// fifo, and there are 8 bits/byte, 10,000 clock edges
+	// are generated to ensure the fifo is completely cleared
+	// in the worst case.
+
+	pinMode(SDA_PIN, INPUT);
+	pinMode(SCL_PIN, OUTPUT);
+	pinMode(STATUS_LED, OUTPUT);
+
+	digitalWrite(STATUS_LED, LOW);
+	// Clock through up to 1000 bits
+	int x = 0;
+	for ( int i = 0; i < 10000; i++ ) {
+
+		digitalWrite(SCL_PIN, HIGH);
+		digitalWrite(SCL_PIN, LOW);
+		digitalWrite(SCL_PIN, HIGH);
+
+		x++;
+		if ( x == 8 ) {
+		  x = 0;
+		  // send a I2C stop signal
+		  digitalWrite(SDA_PIN, HIGH);
+		  digitalWrite(SDA_PIN, LOW);
+		}
+	}
+
+  // send a I2C stop signal
+  digitalWrite(SDA_PIN, HIGH);
+  digitalWrite(SDA_PIN, LOW);
+
+  // join I2C bus
+  Wire.begin();
+
+}
+void teensyInit(){
+	Serial.begin(57600);
+	Serial1.begin(115200);
+	pinMode(21,OUTPUT);
+	pinMode(20,OUTPUT);
+	pinMode(15,OUTPUT);
+	digitalWrite(21,HIGH);
+	digitalWrite(20,LOW);
+	digitalWrite(15,LOW);
+	pinMode(14,INPUT);
+	teensyI2cInit();
+}
+
+	
+
+#endif	// _HALN 

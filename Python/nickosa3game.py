@@ -26,18 +26,6 @@ import numpy as np
 import scipy.linalg as la
 from pylab import *
 from mpu9150mathfuncs import *
-import time
-
-def _readline():
-    a=''
-    while True:
-        b=ser.read()
-        if b=='+':
-            break
-    while True:
-        a+=ser.read()
-        if a[-1]=='\r':           
-            return a
 
 #Initiate plotting objects 
 fig = plt.figure()
@@ -78,7 +66,7 @@ if magplot:
 
 
 #Open serial communication
-ser=serial.Serial(port="COM14",timeout=.5)
+ser=serial.Serial(port="COM12",timeout=.5)
 
 
 magarr=np.array([0,0,0])
@@ -92,23 +80,23 @@ lpm2=np.array([0,0,0],dtype=float)
 yawoffset=0
 
 #Initial orientation vectors. These are rotated by the quaternion to provide visualization.
-iovec=np.array([0,0,1])
-iovec2=np.array([0,1,0])
-iovec3=np.array([0,1,1])
-iovec4=np.array([1,0,0])
+ovec=np.array([0,0,1])
+ovec2=np.array([0,1,0])
+ovec3=np.array([0,1,1])
+ovec4=np.array([1,0,0])
 
 #Loop variables.
 i=0
 cond=True
 v=0
-yaw2=0
 while cond:
     i+=1  
     try:
         #Serial data transfer        
         ser.flushInput()
-        b=_readline()
+        b=ser.readline()
         b=b[:-2].split('/')
+    
         q[0]=b[0]
         q[1]=b[1]
         q[2]=b[2]
@@ -127,9 +115,9 @@ while cond:
         rm[0]=float(b[11])
         rm[1]=float(b[12])
         rm[2]=float(b[13])
-        a=rm
-        print a
-
+        a=rm        
+        print v
+        v+=a[0]
         
 
         proj=projectio(np.array([0,0,1]),m)
@@ -139,10 +127,10 @@ while cond:
 
 
         #Rotate orientation vectors for visualization
-        ovec=rotate2world(q,iovec)
-        ovec2=rotate2world(q,iovec2)
-        ovec3=rotate2world(q,iovec3)
-        ovec4=rotate2world(q,iovec4)
+        ovec=rotate2world(q,ovec)
+        ovec2=rotate2world(q,ovec2)
+        ovec3=rotate2world(q,ovec3)
+        ovec4=rotate2world(q,ovec4)
  
         #Plotting
         mag=axis.scatter(m[0],m[1],m[2],color='g')
@@ -188,12 +176,12 @@ while cond:
     except KeyboardInterrupt:
         cond=False
         ser.close()
-'''
+
     except:
         print "unknown error"
         cond=False
         ser.close()
-'''
+
 plt.close(fig)
 if magplot:
     plt.close(fig2)

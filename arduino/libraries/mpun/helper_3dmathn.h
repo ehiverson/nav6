@@ -51,7 +51,7 @@ class Quaternion {
             x = 0.0f;
             y = 0.0f;
             z = 0.0f;
-			normalize();
+			
         }
         
         Quaternion(float nw, float nx, float ny, float nz) {
@@ -59,7 +59,7 @@ class Quaternion {
             x = nx;
             y = ny;
             z = nz;
-			normalize();
+			
         }
 		
 		void init(float nw, float nx, float ny, float nz) {
@@ -67,7 +67,7 @@ class Quaternion {
             x = nx;
             y = ny;
             z = nz;
-			normalize();
+			
         }
 
         Quaternion multiply(Quaternion q) {
@@ -299,6 +299,11 @@ VectorFloat ellipseTransform(VectorFloat vec,float invw[],float offsets[])
 	return v;
 }
 
-
+VectorFloat gravity(Quaternion q)
+{
+	//Uses the quaternion from the MPU9150 sensor to obtain a vector that points
+	//away from the ground.This vector is in the MPU9150's rotational frame of reference.
+	return VectorFloat(2 * (q.x * q.z - q.w * q.y), 2 * (q.w * q.x + q.y * q.z), q.w * q.w - q.x * q.x - q.y * q.y + q.z * q.z);
+}
 
 #endif /* _HELPER_3DMATH_H_ */

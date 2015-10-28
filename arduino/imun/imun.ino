@@ -1,55 +1,58 @@
 //Includes
 //{
 #define EMPL_TARGET_ATMEGA328
-#include <i2c_t3.h>
-#include <helper_3dmathn.h>
-#include <hal.h>
+#include "i2c_t3.h"
+#include "Servo.h"
+#include <imun_header.h>
+
+
 extern "C" {
 #include <inv_mpu.h>
 #include <inv_mpu_dmp_motion_driver.h>
 }
 
-#define SDA_PIN A4
-#define SCL_PIN A5
-#define STATUS_LED 13
+
 
 #ifndef cbi
 #define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
 #endif
-//}
+
 
 // MPU Calibration
-
+ImunComms comms(Serial1);
 
 //Magnetometer State
 VectorFloat rmagvec,magvec,magvec2;
 //Alpha controls the lowpass filtering of the magnetometer. a higher value will result in faster but shakier magnetometer data.
-const float alpha=0.03;
+const float alpha=0.02;
 float yawradians=0;
 //Magnetometer Calibration
 static float magCalMatrix[9] = 
 { 
- 0.877478, -0.014416, -0.06554,
- -0.014416,  0.836852, -0.056047,
- -0.06554,  -0.056047,  0.529377,
+ 0.54211957, -0.00700604, -0.00089606,
+-0.00700604,  0.53088298, -0.02684748,
+ -0.00089606, -0.02684748,  0.47934341
 };
- static float magCalOffsets[3]={0.2956307617,  0.4688498635,  0.8140717455};
+ static float magCalOffsets[3]={ 0.01663884,  0.03021143,  1.27465444};
 
 //Gyro/Accel/DMP State
 float temp_centigrade = 0.0;  // Gyro/Accel die temperature
 long curr_mpu_temp;
-unsigned long sensor_timestamp;
+unsigned long sensor_timestamp,sensor_timestamp2, interv;
 short compass_data[3];
 elapsedMillis elapsed_since_compass=0;
 elapsedMillis outputtimer=0;
-unsigned int compass_measurement_period=125;
+unsigned int compass_measurement_period=125; //milliseconds
 
 
 
 VectorFloat zaxis0(0,0,1);
 VectorFloat zaxis(0,0,1);
 VectorFloat a(0,0,0);
+VectorFloat g(0,0,0);
+VectorFloat v(0,0,0);
 VectorFloat acal(0,0,0);
+
 Quaternion q,qmag,fusedq,qout;
 
 //Gyro/Accel/DMP Configuration
@@ -57,6 +60,7 @@ unsigned char accel_fsr;  // accelerometer full-scale rate, in +/- Gs (possible 
 unsigned short dmp_update_rate; // update rate, in hZ (possible values are between 4 and 1000).  Default:  100
 unsigned short gyro_fsr;  // Gyro full-scale_rate, in +/- degrees/sec, possible values are 250, 500, 1000 or 2000.  Default:  2000
 unsigned short compass_fsr;
+long accel_biases[3]={0,-600,725};//568};
 // The mounting matrix below tells the MPL how to rotate the raw data from the driver(s). The matrix below reflects the axis orientation of the MPU-6050 on the247 nav6 circuit board.
 static signed char gyro_orientation[9] = { 1, 0, 0,
                                            0, 1, 0,
@@ -69,7 +73,7 @@ unsigned char more = 0;
 long quat[4];
 
 void setup() {
-	teensy_init();
+	teensyInit();
 	Serial.println(F("Nick IMU firmware"));
 
 
@@ -86,21 +90,21 @@ void setup() {
 	Serial.flush();
 	boolean mpu_initialized = false;
 	while ( !mpu_initialized ) {
-	digitalWrite(STATUS_LED, HIGH);
-	if ( initialize_mpu(gyro_orientation,dmp_update_rate,gyro_fsr,accel_fsr,compass_fsr) ) {
-	  mpu_initialized = true;
-	  Serial.print(F("Success"));
-   run_mpu_self_test();
-	  enable_mpu();
-	}
-	else {
-	  digitalWrite(STATUS_LED, LOW);
-	  Serial.print(F("Failed"));
-	  mpu_force_reset();
-	  delay(100);
-	  Serial.println(F("Re-initializing"));
-	  Serial.flush();
-	}
+		digitalWrite(STATUS_LED, HIGH);
+		if ( hal_initialize_mpu(gyro_orientation,dmp_update_rate,gyro_fsr,accel_fsr,compass_fsr) ) {
+			mpu_initialized = true;
+			Serial.print(F("Success"));
+			mpu_set_accel_bias(accel_biases);
+			hal_enable_mpu();
+		}
+		else {
+			digitalWrite(STATUS_LED, LOW);
+			Serial.print(F("Failed"));
+			mpu_force_reset();
+			delay(100);
+			Serial.println(F("Re-initializing"));
+			Serial.flush();
+		}
 	}
 	Serial.println();
 	Serial.println(F("Initialization Complete"));
@@ -116,7 +120,7 @@ void loop() {
 	if ( elapsed_since_compass>compass_measurement_period )
 	{
 		//Get raw magnetometer data and store it as a vector.
-		mpu_get_compass_reg(compass_data,&sensor_timestamp);
+		mpu_get_compass_reg(compass_data,NULL);
 		//Note that the x and y values are switched and the z value is negative. This is becuase the magnetometer has a different orientation than the accelerometer and gyro.
 		rmagvec.init(compass_data[1],compass_data[0],-compass_data[2]);
 		rmagvec=rmagvec.multiply(0.01);
@@ -126,7 +130,6 @@ void loop() {
 		mpu_get_temperature(&curr_mpu_temp, &sensor_timestamp);
 		temp_centigrade = (float)curr_mpu_temp/65536.0;
 		//Math operations
-		
 		magvec=magvec.rotate(q);
     
 		//Lowpass filter of rotated magnetic vector for stability. Via exponential smoothing.
@@ -140,7 +143,6 @@ void loop() {
 		
 		//Calculate quaternion form magnetometer data.
 		yawradians=atan2(magvec.x,magvec.y);
-		if (yawradians<0) yawradians+=6.2832;
 		qmag=qfromYaw(zaxis0,yawradians);		
     
 		//Reset magnetometer reading timer.
@@ -169,26 +171,17 @@ void loop() {
 		{
 			q.init( (float)((quat[0] >> 16)/16384.0f),(float)((quat[1] >> 16)/16384.0f) ,(float)((quat[2] >> 16)/16384.0f) ,(float)((quat[3] >> 16)/16384.0f) );
 			a.init((float)(accel[0]/16384.0f),(float)(accel[1]/16384.0f),(float)(accel[2]/16384.0f));
+      g.init((float)(gyro[0]/16384.0f),(float)(gyro[1]/16384.0f),(float)(gyro[2]/16384.0f));
 			//Math processing
       mathprocess();
       qout=fusedq;
-			/*
-			if (i<254)
-			{
-				i++;
-				acal=acal.add(a.subtract(zaxis));
-			}
-			else if (i==254)
-			{
-				acal=acal.multiply(1/255.0f);
-				i++;
-			}
-			a=a.subtract(acal);
-			*/
+      interv=sensor_timestamp-sensor_timestamp2;
+      sensor_timestamp2=sensor_timestamp;
 		}	
 	}
 	//Serial Output
-	if (outputtimer>20){
+	if (outputtimer>50)
+{
 		serialout();
 		outputtimer=0;
 	}
@@ -197,94 +190,33 @@ void mathprocess()
 {
     //Math processing
     //Generate a quaternion from a fusion of the magnetometer and gyro data.
+    fusedq=qmag.multiply(q);  
+    a=a.rotate(fusedq);
+    //Subtract gravity
+    a=a.subtract(VectorFloat(0,0,1));
+    v=v.add(a.multiply(interv/1000.0f));
     
-    
-    fusedq=qmag.multiply(q);   
-    a=a.rotate(qout);
-
 }
 void serialout(){
 	// Update client with quaternions and some raw sensor data
-  VectorFloat lastoutput=zaxis;
-	Serial.print(qout.w,4);
-	Serial.print('/');
-	Serial.print(qout.x,4);
-	Serial.print('/');
-	Serial.print(qout.y,4);
-	Serial.print('/');
-	Serial.print(qout.z,4);
-	Serial.print('/');
-	Serial.print(magvec.x,4);
-	Serial.print('/');
-	Serial.print(magvec.y,4);
-	Serial.print('/');
-	Serial.print(magvec.z,4);
-	Serial.print('/');
-	Serial.print(a.x,4);
-	Serial.print('/');
-	Serial.print(a.y,4);
-	Serial.print('/');
-	Serial.print(a.z,4);
-	Serial.print('/');
-	Serial.print(yawradians,4);
-	Serial.print('/');
-	Serial.print(lastoutput.x,4);
-	Serial.print('/');
-	Serial.print(lastoutput.y,4);
-	Serial.print('/');
-	Serial.println(lastoutput.z,4);
-  Serial.println('/');
+  comms._serial.write('+');
+
+  comms._serial.write((char)52);
+  comms.transmitBytes(q.w);
+  comms.transmitBytes(q.x);
+  comms.transmitBytes(q.y);
+  comms.transmitBytes(q.z);
+  comms.transmitBytes(magvec.x);
+  comms.transmitBytes(magvec.y);
+  comms.transmitBytes(magvec.z);
+  comms.transmitBytes(a.x);
+  comms.transmitBytes(a.y);
+  comms.transmitBytes(a.z);
+  comms.transmitBytes(rmagvec.x);
+  comms.transmitBytes(rmagvec.y);
+  comms.transmitBytes(rmagvec.z);
+
+
+
 }
-void teensy_init(){
-	Serial.begin(57600);
-	pinMode(21,OUTPUT);
-	pinMode(20,OUTPUT);
-	pinMode(15,OUTPUT);
-	digitalWrite(21,HIGH);
-	digitalWrite(20,LOW);
-	digitalWrite(15,LOW);
-	pinMode(14,INPUT);
-	delay(1000);
-	// reset I2C bus
-	// This ensures that if the nav6 was reset, but the devices
-	// on the I2C bus were not, that any transfer in progress do
-	// not hang the device/bus.  Since the MPU-6050 has a 1024-byte
-	// fifo, and there are 8 bits/byte, 10,000 clock edges
-	// are generated to ensure the fifo is completely cleared
-	// in the worst case.
-	// in the worst case.
 
-	pinMode(SDA_PIN, INPUT);
-	pinMode(SCL_PIN, OUTPUT);
-	pinMode(STATUS_LED, OUTPUT);
-
-	digitalWrite(STATUS_LED, LOW);
-	// Clock through up to 1000 bits
-	int x = 0;
-	for ( int i = 0; i < 10000; i++ ) {
-
-		digitalWrite(SCL_PIN, HIGH);
-		digitalWrite(SCL_PIN, LOW);
-		digitalWrite(SCL_PIN, HIGH);
-
-		x++;
-		if ( x == 8 ) {
-		  x = 0;
-		  // send a I2C stop signal
-		  digitalWrite(SDA_PIN, HIGH);
-		  digitalWrite(SDA_PIN, LOW);
-		}
-	}
-
-  // send a I2C stop signal
-  digitalWrite(SDA_PIN, HIGH);
-  digitalWrite(SDA_PIN, LOW);
-
-  // join I2C bus
-  Wire.begin();
-
-  // Disable internal I2C pull-ups
-  //cbi(PORTC, 4);
-  //cbi(PORTC, 5);
-  // initialize serial communication
-}
