@@ -7,53 +7,50 @@ uint8_t pwmpin2=5;
 uint8_t pwmpin3=4;
 uint8_t pwmpin4=3;
 
-ImunMotor nmotor1;
-ImunMotor nmotor2;
-ImunMotor nmotor3;
-ImunMotor nmotor4;
-ImunQuadMotor motors;
+ImunMotor motor1(pwmpin1);
+ImunMotor motor2(pwmpin2);
+ImunMotor motor3(pwmpin3);
+ImunMotor motor4(pwmpin4);
+ImunQuadMotor motors(motor1,motor2,motor3,motor4);
 
 String e;
 void setup() {
   // put your setup code here, to run once:
-  Serial.begin(9600);
-  nmotor1.init(pwmpin1);
-  nmotor2.init(pwmpin2);
-  nmotor3.init(pwmpin3);
-  nmotor4.init(pwmpin4);
-  motors.init(nmotor1,nmotor2,nmotor3,nmotor4);
-  nmotor1.setThrottle(0);
-  nmotor2.setThrottle(0);
-  nmotor3.setThrottle(0);
-  nmotor4.setThrottle(0);
+  Serial1.begin(115200);
+
+
+  motor1.setThrottle(0);
+  motor2.setThrottle(0);
+  motor3.setThrottle(0);
+  motor4.setThrottle(0);
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
-  if (Serial.available()>0){
-    e=Serial.readStringUntil('/');
+  if (Serial1.available()>0){
+    e=Serial1.readStringUntil('/');
     if (e.substring(0,1)=="1")
     {
-      nmotor1.setThrottle(e.substring(1).toInt()/100.f);
+      motor1.setThrottle(e.substring(1).toInt()/100.f);
     }
     else if (e.substring(0,1)=="2")
     {
-      nmotor2.setThrottle(e.substring(1).toInt()/100.f);
+      motor2.setThrottle(e.substring(1).toInt()/100.f);
     }
     else if (e.substring(0,1)=="3")
     {
-      nmotor3.setThrottle(e.substring(1).toInt()/100.f);
+      motor3.setThrottle(e.substring(1).toInt()/100.f);
     }
     else if (e.substring(0,1)=="4")
     {
-      nmotor4.setThrottle(e.substring(1).toInt()/100.f);
+      motor4.setThrottle(e.substring(1).toInt()/100.f);
     }
     else if (e.substring(0,1)=="a")
     {
-      nmotor1.setThrottle(e.substring(1).toInt()/100.f);
-      nmotor2.setThrottle(e.substring(1).toInt()/100.f);
-      nmotor3.setThrottle(e.substring(1).toInt()/100.f);
-      nmotor4.setThrottle(e.substring(1).toInt()/100.f);
+      motor1.setThrottle(e.substring(1).toInt()/100.f);
+      motor2.setThrottle(e.substring(1).toInt()/100.f);
+      motor3.setThrottle(e.substring(1).toInt()/100.f);
+      motor4.setThrottle(e.substring(1).toInt()/100.f);
     }
     else if (e.substring(0,1)=='y')
     {
@@ -62,6 +59,18 @@ void loop() {
     else if (e.substring(0,1)=='t')
     {
       motors.setThrust(e.substring(1).toInt()/100.f);
+    }
+    else if (e.substring(0,1)=='r')
+    {
+      motors.setRoll(e.substring(1).toInt()/100.f);
+    }
+    else if (e.substring(0,1)=='p')
+    {
+      motors.setPitch(e.substring(1).toInt()/100.f);
+    }
+    else if (e.substring(0,1)=='k')
+    {
+      motors.killMotors();
     }
   }
 }

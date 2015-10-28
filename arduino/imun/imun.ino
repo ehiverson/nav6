@@ -29,11 +29,11 @@ float yawradians=0;
 //Magnetometer Calibration
 static float magCalMatrix[9] = 
 { 
- 0.877478, -0.014416, -0.06554,
- -0.014416,  0.836852, -0.056047,
- -0.06554,  -0.056047,  0.529377,
+ 0.54211957, -0.00700604, -0.00089606,
+-0.00700604,  0.53088298, -0.02684748,
+ -0.00089606, -0.02684748,  0.47934341
 };
- static float magCalOffsets[3]={0.2956307617,  0.4688498635,  0.8140717455};
+ static float magCalOffsets[3]={ 0.01663884,  0.03021143,  1.27465444};
 
 //Gyro/Accel/DMP State
 float temp_centigrade = 0.0;  // Gyro/Accel die temperature
@@ -52,6 +52,7 @@ VectorFloat a(0,0,0);
 VectorFloat g(0,0,0);
 VectorFloat v(0,0,0);
 VectorFloat acal(0,0,0);
+
 Quaternion q,qmag,fusedq,qout;
 
 //Gyro/Accel/DMP Configuration
@@ -129,7 +130,6 @@ void loop() {
 		mpu_get_temperature(&curr_mpu_temp, &sensor_timestamp);
 		temp_centigrade = (float)curr_mpu_temp/65536.0;
 		//Math operations
-		
 		magvec=magvec.rotate(q);
     
 		//Lowpass filter of rotated magnetic vector for stability. Via exponential smoothing.
@@ -180,7 +180,8 @@ void loop() {
 		}	
 	}
 	//Serial Output
-	if (outputtimer>20){
+	if (outputtimer>50)
+{
 		serialout();
 		outputtimer=0;
 	}
@@ -200,7 +201,7 @@ void serialout(){
 	// Update client with quaternions and some raw sensor data
   comms._serial.write('+');
 
-  comms._serial.write((char)40);
+  comms._serial.write((char)52);
   comms.transmitBytes(q.w);
   comms.transmitBytes(q.x);
   comms.transmitBytes(q.y);
@@ -211,6 +212,9 @@ void serialout(){
   comms.transmitBytes(a.x);
   comms.transmitBytes(a.y);
   comms.transmitBytes(a.z);
+  comms.transmitBytes(rmagvec.x);
+  comms.transmitBytes(rmagvec.y);
+  comms.transmitBytes(rmagvec.z);
 
 
 

@@ -36,8 +36,9 @@ import struct
 def serialIn(comport,queueobject):
     cond=True
     ser=serial.Serial(port=comport,timeout=.5,baudrate=115200) 
-    packetlength=20
-    starttime=time.clock()
+    times=np.zeros((20))
+    times[-1]=time.clock()
+    j=0
     while cond:
         
         while True:
@@ -60,8 +61,14 @@ def serialIn(comport,queueobject):
             queueobject.put(blist,block=False)
         except:
             pass
-        print 1/(time.clock()-starttime)
-        starttime=time.clock()
+        times[:-1]=times[1:]
+ 
+        times[-1]=time.clock()
+        j+=1 
+
+        if j==20:
+            j=0            
+          #  print "FPS",'%.0f'%(1/np.ediff1d(times).mean())
         try:
             out=exitqueue.get(block=False)
         except:
@@ -146,7 +153,11 @@ while cond:
         q[1]=b[1]
         q[2]=b[2]
         q[3]=b[3]
-
+        
+        print 'r', np.rad2deg(np.arctan2(2*(q[0]*q[1]+q[2]*q[3]),1-2*(q[1]**2+q[2]**2)))
+        print 'y', np.rad2deg(np.arctan2(2*(q[0]*q[3]+q[1]*q[2]),1-2*(q[2]**2+q[3]**2)))
+        print 'p', np.rad2deg(np.arcsin(2*(q[0]*q[2]-q[3]*q[1])))      
+              
         m[0]=float(b[4])
         m[1]=float(b[5])
         m[2]=float(b[6])
@@ -154,14 +165,13 @@ while cond:
         a[0]=float(b[7])
         a[1]=float(b[8])
         a[2]=float(b[9])
-        '''
-        yaw=float (b[10])
         
-        rm[0]=float(b[11])
-        rm[1]=float(b[12])
-        rm[2]=float(b[13])
-        a=rm
-        '''
+        
+        rm[0]=float(b[10])
+        rm[1]=float(b[11])
+        rm[2]=float(b[12])
+        
+        
         
 
         proj=projectio(np.array([0,0,1]),m)
@@ -215,51 +225,51 @@ while cond:
         
         #Magnetic data accumulation for calibration.
         if magcalibrate or magcalcheck:
-            magarr=np.vstack([magarr,m])
+            magarr=np.vstack([magarr,rm])
         
 
-    except:
+    except KeyboardInterrupt:
         cond=False
         exitqueue.put('exit')
         time.sleep(0.1)
-        raise
+
        
 
-plt.close(fig)
-if magplot:
-    plt.close(fig2)
-
-if magcalibrate or magcalcheck:
-    #run a magnetometer calibration 
-    magarr=np.delete(magarr,0,axis=0)
-    calmagarr=np.zeros(magarr.shape)
-    print "Fitting Ellipse"
-    ell=fitellipse(magarr)
-    offsets=ell[1]
-    invw=la.sqrtm(ell[0])
-    
-    for i in range(magarr.shape[0]):
-        calmagarr[i,0],calmagarr[i,1],calmagarr[i,2]=calibratemag(magarr[i],offsets,invw)
-    
-    
-    print "Plotting"
-    fig=plt.figure()
-    axis2=fig.gca(projection="3d")
-    axis2.scatter(0,0,0,color='r')
-    for i in range(magarr.shape[0]):
-        axis2.scatter(magarr[i,0],magarr[i,1],magarr[i,2])
-        axis2.scatter(calmagarr[i,0],calmagarr[i,1],calmagarr[i,2],color='g')
-    axis2.set_xlabel('x')
-    axis2.set_ylabel('y')
-    axis2.set_zlabel('z')
-    axis2.set_aspect("equal")
-    axis2.set_xlim([-ra,ra])
-    axis2.set_ylim([-ra,ra])
-    axis2.set_zlim([-ra,ra])
-    print invw
-    print offsets
-    
-    
-    
-    
-    plt.show()
+        plt.close(fig)
+        if magplot:
+            plt.close(fig2)
+        
+        if magcalibrate or magcalcheck:
+            #run a magnetometer calibration 
+            magarr=np.delete(magarr,0,axis=0)
+            calmagarr=np.zeros(magarr.shape)
+            print "Fitting Ellipse"
+            ell=fitellipse(magarr)
+            offsets=ell[1]
+            invw=la.sqrtm(ell[0])
+            
+            for i in range(magarr.shape[0]):
+                calmagarr[i,0],calmagarr[i,1],calmagarr[i,2]=calibratemag(magarr[i],offsets,invw)
+            
+            
+            print "Plotting"
+            fig=plt.figure()
+            axis2=fig.gca(projection="3d")
+            axis2.scatter(0,0,0,color='r')
+            for i in range(magarr.shape[0]):
+                axis2.scatter(magarr[i,0],magarr[i,1],magarr[i,2])
+                axis2.scatter(calmagarr[i,0],calmagarr[i,1],calmagarr[i,2],color='g')
+            axis2.set_xlabel('x')
+            axis2.set_ylabel('y')
+            axis2.set_zlabel('z')
+            axis2.set_aspect("equal")
+            axis2.set_xlim([-ra,ra])
+            axis2.set_ylim([-ra,ra])
+            axis2.set_zlim([-ra,ra])
+            print invw
+            print offsets
+            
+            
+            
+            
+            plt.show()
