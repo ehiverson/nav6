@@ -199,6 +199,10 @@ void mathprocess()
 }
 void serialout(){
 	// Update client with quaternions and some raw sensor data
+  float* buff={1,2,3};
+  comms.convertData(buff,3);
+  
+  /*
   comms._serial.write('+');
 
   comms._serial.write((char)52);
@@ -215,7 +219,7 @@ void serialout(){
   comms.transmitBytes(rmagvec.x);
   comms.transmitBytes(rmagvec.y);
   comms.transmitBytes(rmagvec.z);
-
+*/
 
 
 }

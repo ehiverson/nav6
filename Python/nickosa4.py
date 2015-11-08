@@ -43,7 +43,7 @@ def serialIn(comport,queueobject):
         
         while True:
             b=ser.read()
-            if b=='+':
+            if b==0x7E:
                 break
         b=ser.read()
         packetlength=struct.unpack('b',b)[0]
