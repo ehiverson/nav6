@@ -199,10 +199,12 @@ void mathprocess()
 }
 void serialout(){
 	// Update client with quaternions and some raw sensor data
-  float* buff={1,2,3};
-  comms.convertData(buff,3);
-  
+  float buff[3]={1,2,3};
+  unsigned char p[sizeof(buff)];
+  comms.convertData(buff,3,p);
+  Serial.write(p,sizeof(p));
   /*
+  
   comms._serial.write('+');
 
   comms._serial.write((char)52);

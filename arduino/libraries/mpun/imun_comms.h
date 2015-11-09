@@ -8,7 +8,7 @@ class ImunComms
 		ImunComms(Stream& serial);
 		void transmitBytes(uint8_t* in, uint8_t length);
 		uint8_t receiveBytes(uint8_t* buffer);
-		void convertData(float * buffer, uint8_t bufferLength);
+		void convertData(float * buffer, uint8_t bufferLength,unsigned char  out[]);
 		Stream& _serial;
 
 };
@@ -56,12 +56,17 @@ uint8_t ImunComms::receiveBytes(uint8_t* buffer){
 	return finalLength;
 }		
 
-void ImunComms::convertData(float* buffer,uint8_t bufferLength){
-	unsigned char p[bufferLength*sizeof(float)];
+void ImunComms::convertData(float buffer[],uint8_t bufferLength,unsigned char p[]){
+	uint8_t outLength=0;
+	union {
+		float a;
+		unsigned char bytes[4];
+	} thing;
 	for (uint8_t i=0;i<bufferLength;i++){
-		p[i*sizeof(float)]=(unsigned char *)&buffer[i];
+		thing.a=buffer[i];
+		memcpy(&p[i*sizeof(float)],&thing.bytes,4);
 	}
-
+	
 }
 
 
