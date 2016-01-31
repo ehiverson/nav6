@@ -39,23 +39,32 @@ def serialIn(comport,queueobject):
     times=np.zeros((20))
     times[-1]=time.clock()
     j=0
+    
     while cond:
-        
         while True:
             b=ser.read()
-            if b==0x7E:
+            if ord(b)==0x7e:
                 break
         b=ser.read()
-        packetlength=struct.unpack('b',b)[0]
-        b=''
-        for i in range(packetlength):
-            b+=ser.read()
-        blist=[]  
-        for i in range(packetlength//4):
-            blist.append(b[i*4:i*4+4])
+        packetlength=struct.unpack('B',b)[0]          
+        b=ser.read(packetlength)
+        c=''     
+        xorflag=False
+        for i in range(len(b)):        
+            if xorflag==False and ord(b[i])==0x7d:
+                xorflag=True
+            else:
+                if xorflag==True and ((ord(b[i])^32==0x7e) or (ord(b[i])^32==0x7d)):
+                    c+=chr(ord(b[i])^32)
+                    xorflag=False
+                else:
+                    c+=b[i]
+                    xorflag=False
+        blist=[] 
+        for i in range(len(c)//4):
+            blist.append(c[i*4:i*4+4])
         for i in range(len(blist)):
             blist[i]=struct.unpack('f',blist[i])[0]
-    
     
         try:
             queueobject.put(blist,block=False)
@@ -78,7 +87,7 @@ def serialIn(comport,queueobject):
             print "serial closing"
             return
         
-queue=Queue.LifoQueue(maxsize=10)
+queue=Queue.LifoQueue(maxsize=1)
 exitqueue=Queue.Queue()
 serialThread=threading.Thread(target=serialIn,args=('COM14',queue))
 
@@ -153,11 +162,10 @@ while cond:
         q[1]=b[1]
         q[2]=b[2]
         q[3]=b[3]
+        #print q
         
-        print 'r', np.rad2deg(np.arctan2(2*(q[0]*q[1]+q[2]*q[3]),1-2*(q[1]**2+q[2]**2)))
-        print 'y', np.rad2deg(np.arctan2(2*(q[0]*q[3]+q[1]*q[2]),1-2*(q[2]**2+q[3]**2)))
-        print 'p', np.rad2deg(np.arcsin(2*(q[0]*q[2]-q[3]*q[1])))      
-              
+        print 'r','%.1f' %np.rad2deg(np.arctan2(2*(q[0]*q[1]+q[2]*q[3]),1-2*(q[1]**2+q[2]**2))),'y','%.1f'%np.rad2deg(np.arctan2(2*(q[0]*q[3]+q[1]*q[2]),1-2*(q[2]**2+q[3]**2))),'p', '%.1f'%np.rad2deg(np.arcsin(2*(q[0]*q[2]-q[3]*q[1])))      
+          
         m[0]=float(b[4])
         m[1]=float(b[5])
         m[2]=float(b[6])
@@ -175,7 +183,6 @@ while cond:
         
 
         proj=projectio(np.array([0,0,1]),m)
-
 
    
 
