@@ -7,6 +7,7 @@
 #include <imun_hal.h>
 #include <imun_comms.h>
 #include <teensy_port.h>
+#include <imun_controller.h>
 
 
 #endif /*_IMUN_HEADER_ */

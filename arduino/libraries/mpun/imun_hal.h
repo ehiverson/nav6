@@ -57,14 +57,14 @@ static struct platform_data_s gyro_pdata = {
                      0, 1, 0,
                      0, 0, 1}
 };
-
+/*
 static struct platform_data_s compass_pdata = {
     .orientation = { 0, 1, 0,
                      1, 0, 0,
                      0, 0,-1}
 };
 
-
+*/
 
 void gyro_data_ready_cb(void) {
 
