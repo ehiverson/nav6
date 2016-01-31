@@ -21,28 +21,37 @@ extern "C" {
 //Define comm port
 ImunComms comms(Serial1);
 
-//Magnetometer State
-VectorFloat rmagvec,magvec,magvec2;
+//CALIBRATION AND USER SETTABLE VALUES
 //Alpha controls the lowpass filtering of the magnetometer. a higher value will result in faster but shakier magnetometer data.
 const float alpha=0.02;
-float yawradians=0;
+
 //Magnetometer Calibration
+//This adjusts for elliptical magnetometer readings
 static float magCalMatrix[9] = 
 { 
  0.54211957, -0.00700604, -0.00089606,
 -0.00700604,  0.53088298, -0.02684748,
  -0.00089606, -0.02684748,  0.47934341
 };
- static float magCalOffsets[3]={ 0.01663884,  0.03021143,  1.27465444};
+//This adjusts for off-center magnetometer readings
+static float magCalOffsets[3]={ 0.01663884,  0.03021143,  1.27465444};
 
-//Gyro/Accel/DMP State
-float temp_centigrade = 0.0;  // Gyro/Accel die temperature
+unsigned int compass_measurement_period=125; //milliseconds
+long accel_biases[3]={0,-600,725};
+// The mounting matrix below tells the MPL how to rotate the raw data from the driver(s). The matrix below reflects the axis orientation of the MPU-6050 on the circuit board.
+static signed char gyro_orientation[9] = { 1, 0, 0,
+                                           0, 1, 0,
+                                           0, 0, 1};
+//Temperature
+float temp_centigrade = 22;  // Gyro/Accel die temperature, initial setting shouldn't matter
 long curr_mpu_temp;
+
+//Timing
 unsigned long sensor_timestamp,sensor_timestamp2, interv;
 short compass_data[3];
 elapsedMillis elapsed_since_compass=0;
 elapsedMillis outputtimer=0;
-unsigned int compass_measurement_period=125; //milliseconds
+
 
 
 
@@ -52,20 +61,16 @@ VectorFloat a(0,0,0);
 VectorFloat g(0,0,0);
 VectorFloat v(0,0,0);
 VectorFloat acal(0,0,0);
-
 Quaternion q,qmag,fusedq,qout;
+float yawradians=0;
+VectorFloat rmagvec,magvec,magvec2;
 
 //Gyro/Accel/DMP Configuration
 unsigned char accel_fsr;  // accelerometer full-scale rate, in +/- Gs (possible values are 2, 4, 8 or 16).  Default:  2
 unsigned short dmp_update_rate; // update rate, in hZ (possible values are between 4 and 1000).  Default:  100
 unsigned short gyro_fsr;  // Gyro full-scale_rate, in +/- degrees/sec, possible values are 250, 500, 1000 or 2000.  Default:  2000
 unsigned short compass_fsr;
-long accel_biases[3]={0,-600,725};//568};
-// The mounting matrix below tells the MPL how to rotate the raw data from the driver(s). The matrix below reflects the axis orientation of the MPU-6050 on the247 nav6 circuit board.
-static signed char gyro_orientation[9] = { 1, 0, 0,
-                                           0, 1, 0,
-                                           0, 0, 1
-                                         };
+
 
 //HAL
 short gyro[3], accel[3], sensors;
@@ -141,7 +146,7 @@ void loop() {
 		magvec=magvec.multiply(alpha).add(magvec2.multiply(1-alpha));
 		magvec2=magvec;
 		
-		//Calculate quaternion form magnetometer data.
+		//Calculate quaternion from magnetometer data.
 		yawradians=atan2(magvec.x,magvec.y);
 		qmag=qfromYaw(zaxis0,yawradians);		
     
