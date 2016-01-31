@@ -12,13 +12,13 @@ extern "C" {
 }
 
 
-
+/*
 #ifndef cbi
 #define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
 #endif
+*/
 
-
-// MPU Calibration
+//Define comm port
 ImunComms comms(Serial1);
 
 //Magnetometer State
