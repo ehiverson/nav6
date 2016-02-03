@@ -71,7 +71,7 @@ void gyro_data_ready_cb(void) {
 	hal.new_gyro = 1;
 }
 
-boolean hal_initialize_mpu(signed char gyro_orientation[9],unsigned short &dmp_update_rate, unsigned short &gyro_fsr, unsigned char &accel_fsr, unsigned short &compass_fsr){
+boolean hal_initialize_mpu(unsigned short &dmp_update_rate, unsigned short &gyro_fsr, unsigned char &accel_fsr, unsigned short &compass_fsr){
 	int result;
 	struct int_param_s int_param;
 

@@ -38,10 +38,7 @@ static float magCalOffsets[3]={ 0.01663884,  0.03021143,  1.27465444};
 
 unsigned int compass_measurement_period=125; //milliseconds
 long accel_biases[3]={0,-600,725};
-// The mounting matrix below tells the MPL how to rotate the raw data from the driver(s). The matrix below reflects the axis orientation of the MPU-6050 on the circuit board.
-static signed char gyro_orientation[9] = { 1, 0, 0,
-                                           0, 1, 0,
-                                           0, 0, 1};
+
 //Temperature
 float temp_centigrade = 22;  // Gyro/Accel die temperature, initial setting shouldn't matter
 long curr_mpu_temp;
@@ -96,7 +93,7 @@ void setup() {
 	boolean mpu_initialized = false;
 	while ( !mpu_initialized ) {
 		digitalWrite(STATUS_LED, HIGH);
-		if ( hal_initialize_mpu(gyro_orientation,dmp_update_rate,gyro_fsr,accel_fsr,compass_fsr) ) {
+		if ( hal_initialize_mpu(dmp_update_rate,gyro_fsr,accel_fsr,compass_fsr) ) {
 			mpu_initialized = true;
 			Serial.print(F("Success"));
 			mpu_set_accel_bias(accel_biases);
