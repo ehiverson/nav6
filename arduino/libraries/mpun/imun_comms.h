@@ -9,7 +9,9 @@ class ImunComms
 		void transmitBytes(uint8_t* in, uint8_t length);
 		uint8_t receiveBytes(uint8_t* buffer);
 		void convertData(float * buffer, uint8_t bufferLength,unsigned char  out[]);
+		void receiveCommands();
 		Stream& _serial;
+		bool stream=false;
 
 };
 
@@ -47,7 +49,7 @@ uint8_t ImunComms::receiveBytes(uint8_t* buffer){
 	uint8_t finalLength=length;
 	for (uint8_t i=0;i<length;i+=1){
 		uint8_t in=_serial.read();
-		if ((in==0x7d) and ((_serial.peek()^32==0x7e) or (_serial.peek()^32==0x7d))){
+		if ((in==0x7d) and (((_serial.peek()^32)==0x7e) or ((_serial.peek()^32)==0x7d))){
 			finalLength-=1;
 			buffer[i]=_serial.read()^32;
 		}
@@ -67,6 +69,22 @@ void ImunComms::convertData(float buffer[],uint8_t bufferLength,unsigned char p[
 		memcpy(&p[i*sizeof(float)],&thing.bytes,4);
 	}
 	
+}
+
+void ImunComms::receiveCommands(){
+	while (_serial.available()>0)
+	{
+		String in=_serial.readStringUntil('/');
+		if (in=="isitadrone?")
+		{
+			_serial.println("yesitis!");
+		}
+		
+		if (in=="streamon")
+			stream=true;
+		if (in=="streamoff")
+			stream=false;
+	}
 }
 
 

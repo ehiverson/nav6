@@ -201,29 +201,15 @@ void mathprocess()
 }
 void serialout(){
 	// Update client with quaternions and some raw sensor data
-  float buff[13]={q.w,q.x,q.y,q.z,magvec.x,magvec.y,magvec.z,a.x,a.y,a.z,rmagvec.x,rmagvec.y,rmagvec.z};
-  unsigned char p[sizeof(buff)];
-  comms.convertData(buff,13,p);
-  comms.transmitBytes(p,sizeof(p));
-  /*
-  
-  comms._serial.write('+');
+  if (comms.stream)
+  {
+    float buff[13]={q.w,q.x,q.y,q.z,magvec.x,magvec.y,magvec.z,a.x,a.y,a.z,rmagvec.x,rmagvec.y,rmagvec.z};
+    unsigned char p[sizeof(buff)];
+    comms.convertData(buff,13,p);
+    comms.transmitBytes(p,sizeof(p));
+  }
+  comms.receiveCommands();
 
-  comms._serial.write((char)52);
-  comms.transmitBytes(q.w);
-  comms.transmitBytes(q.x);
-  comms.transmitBytes(q.y);
-  comms.transmitBytes(q.z);
-  comms.transmitBytes(magvec.x);
-  comms.transmitBytes(magvec.y);
-  comms.transmitBytes(magvec.z);
-  comms.transmitBytes(a.x);
-  comms.transmitBytes(a.y);
-  comms.transmitBytes(a.z);
-  comms.transmitBytes(rmagvec.x);
-  comms.transmitBytes(rmagvec.y);
-  comms.transmitBytes(rmagvec.z);
-*/
 
 
 }
