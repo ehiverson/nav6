@@ -10,7 +10,7 @@ import math
 import scipy.linalg as la
 
 def quatmult(q1,q2):
-    #Multiplies two quaternions, q1 and q2
+    '''Multiplies two quaternions, q1 and q2'''
     Q=np.array([0,0,0,0],dtype=float)
     Q[0]=q1[0]*q2[0]-q1[1]*q2[1]-q1[2]*q2[2]-q1[3]*q2[3]
     Q[1]=q1[0]*q2[1]+q1[1]*q2[0]+q1[2]*q2[3]-q1[3]*q2[2]
@@ -19,11 +19,11 @@ def quatmult(q1,q2):
     return Q
  
 def quatconj(quat):
-    #returns the conjugate of the provided quaternion
+    '''returns the conjugate of the provided quaternion'''
     return np.array([quat[0],-quat[1],-quat[2],-quat[3]])   
 
 def rotate2world(quat,vec):
-    #rotates the vector, vec, by the rotation described by the quaternion, quat
+    '''rotates the vector, vec, by the rotation described by the quaternion, quat'''
     quat2=np.array([0,vec[0],vec[1],vec[2]])
     qprod=quatmult(quat,quat2)
     qconj=quatconj(quat)
@@ -31,11 +31,13 @@ def rotate2world(quat,vec):
     return qfinal[1:]
     
 def calibratemag(m,offsets,invw):
-    #Given the raw magnetic field vector from an MPU9150, m, a vector describing 
-    #the hard iron offset of the magetometer, offsets, and a 3x3 matrix describing
-    #the elliptical soft iron error of the magnetometer, invw; this function returns
-    #a calibrated magnetic field vector which should always have the same magnitude
-    #if the there is no magnetic field source other than the earth's present.
+    '''
+    Given the raw magnetic field vector from an MPU9150, m, a vector describing 
+    the hard iron offset of the magetometer, offsets, and a 3x3 matrix describing
+    the elliptical soft iron error of the magnetometer, invw; this function returns
+    a calibrated magnetic field vector which should always have the same magnitude
+    if the there is no magnetic field source other than the earth's present.
+    '''
     m[0]-=offsets[0]
     m[1]-=offsets[1]
     m[2]-=offsets[2]
@@ -75,25 +77,27 @@ def decode(inp):
     return outp
     
 def gravity(q):
-    #Uses the quaternion from the MPU9150 sensor to obtain a vector that points
-    #away from the ground. This vector is in the MPU9150's rotational frame of reference.
+    '''
+    Uses the quaternion from the MPU9150 sensor to obtain a vector that points
+    away from the ground. This vector is in the MPU9150's rotational frame of reference.
+    '''
     gx=2*(q[1]*q[3]-q[0]*q[2])
     gy=2*(q[0]*q[1]+q[2]*q[3])
     gz=(q[0]*q[0]-q[1]*q[1]-q[2]*q[2]+q[3]*q[3])
     return np.array([gx,gy,gz])
     
 def YawPitchRoll(q,g):
-    #Returns the yaw, pitch, and roll of the mpu9150 from its quaternion.
-  yaw= math.degrees(np.arctan2(2 * q[1] * q[2] - 2 * q[0] * q[3], 2 * q[0] * q[0] + 2 * q[1] * q[1] - 1))
-  pitch = math.degrees(np.arctan(g[0] / np.sqrt(g[1]**2 + g[2]**2)))
-  roll = math.degrees(np.arctan(g[1] / np.sqrt(g[0]**2+ g[2]**2)))
-  return yaw,pitch,roll
+    '''Returns the yaw, pitch, and roll of the mpu9150 from its quaternion.'''
+    yaw= math.degrees(np.arctan2(2 * q[1] * q[2] - 2 * q[0] * q[3], 2 * q[0] * q[0] + 2 * q[1] * q[1] - 1))
+    pitch = math.degrees(np.arctan(g[0] / np.sqrt(g[1]**2 + g[2]**2)))
+    roll = math.degrees(np.arctan(g[1] / np.sqrt(g[0]**2+ g[2]**2)))
+    return yaw,pitch,roll
 
     
     
     
 def compassHeadingRadians(mag,pitch_radians,roll_radians):
-    #Make sure that the mag vector is perpendicular to gravity. i.e. it should have inclination removed.
+    '''Make sure that the mag vector is perpendicular to gravity. i.e. it should have inclination removed.'''
     cos_roll = np.cos(roll_radians)
     sin_roll = np.sin(roll_radians)
     cos_pitch = np.cos(pitch_radians)
@@ -104,10 +108,10 @@ def compassHeadingRadians(mag,pitch_radians,roll_radians):
     return tilt_compensated_heading;
     
 def yawaxis2quat(yawradians,vecaxis):
-    #Converts an axis of rotation and the rotation in radians to a quaternion.
+    '''Converts an axis of rotation and the rotation in radians to a quaternion.'''
     a=np.sin(yawradians/2)
     b=np.array([np.cos(yawradians/2),a*vecaxis[0],a*vecaxis[1],a*vecaxis[2]])
     return b/np.sqrt(np.dot(b,b))
 def projectio(g,m):
-    #returns the projection of vector, m, perpendicular to vector, g.
+    '''returns the projection of vector, m, perpendicular to vector, g.'''
     return m-np.dot(m,g)*g/np.sqrt(np.dot(g,g))**2

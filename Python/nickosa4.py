@@ -27,7 +27,7 @@ import scipy.linalg as la
 from pylab import *
 from mpu9150mathfuncs import *
 import time
-import Queue
+import queue
 import threading
 from Drone import Drone
 
@@ -55,17 +55,17 @@ def serialIn(comport,queueobject):
             j=0            
           #  print "FPS",'%.0f'%(1/np.ediff1d(times).mean())
         try:
-            out=exitqueue.get(block=False)
+            out=exitQueue.get(block=False)
         except:
             continue      
         if out=='exit':
             ser.close()  
-            print "serial closing"
+            print("serial closing")
             return
         
-queue=Queue.LifoQueue(maxsize=1)
-exitqueue=Queue.Queue()
-serialThread=threading.Thread(target=serialIn,args=('COM14',queue))
+dataQueue=queue.LifoQueue(maxsize=1)
+exitQueue=queue.Queue()
+serialThread=threading.Thread(target=serialIn,args=('COM14',dataQueue))
 
 #Initiate plotting objects 
 fig = plt.figure()
@@ -133,11 +133,11 @@ serialThread.start()
 while cond: 
     try:
         #Serial data transfer        
-        q,m,a,rm,skippedBytes=queue.get()
+        q,m,a,rm,skippedBytes=dataQueue.get()
 
         #print q
         
-        print 'r','%.1f' %np.rad2deg(np.arctan2(2*(q[0]*q[1]+q[2]*q[3]),1-2*(q[1]**2+q[2]**2))),'y','%.1f'%np.rad2deg(np.arctan2(2*(q[0]*q[3]+q[1]*q[2]),1-2*(q[2]**2+q[3]**2))),'p', '%.1f'%np.rad2deg(np.arcsin(2*(q[0]*q[2]-q[3]*q[1])))      
+        print ('r','%.1f' %np.rad2deg(np.arctan2(2*(q[0]*q[1]+q[2]*q[3]),1-2*(q[1]**2+q[2]**2))),'y','%.1f'%np.rad2deg(np.arctan2(2*(q[0]*q[3]+q[1]*q[2]),1-2*(q[2]**2+q[3]**2))),'p', '%.1f'%np.rad2deg(np.arcsin(2*(q[0]*q[2]-q[3]*q[1]))))   
           
         
         
@@ -198,7 +198,7 @@ while cond:
 
     except KeyboardInterrupt:
         cond=False
-        exitqueue.put('exit')
+        exitQueue.put('exit')
         time.sleep(0.1)
 
        
@@ -211,7 +211,7 @@ while cond:
             #run a magnetometer calibration 
             magarr=np.delete(magarr,0,axis=0)
             calmagarr=np.zeros(magarr.shape)
-            print "Fitting Ellipse"
+            print("Fitting Ellipse")
             ell=fitellipse(magarr)
             offsets=ell[1]
             invw=la.sqrtm(ell[0])
@@ -220,7 +220,7 @@ while cond:
                 calmagarr[i,0],calmagarr[i,1],calmagarr[i,2]=calibratemag(magarr[i],offsets,invw)
             
             
-            print "Plotting"
+            print("Plotting")
             fig=plt.figure()
             axis2=fig.gca(projection="3d")
             axis2.scatter(0,0,0,color='r')
@@ -234,8 +234,8 @@ while cond:
             axis2.set_xlim([-ra,ra])
             axis2.set_ylim([-ra,ra])
             axis2.set_zlim([-ra,ra])
-            print invw
-            print offsets
+            print(invw)
+            print(offsets)
             
             
             

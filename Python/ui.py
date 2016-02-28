@@ -9,7 +9,6 @@ import PyQt4.Qwt5 as Qwt
 
 import sys
 import serial, platform
-import struct
 
 class MyWindow(QtGui.QMainWindow):
     def __init__(self):
