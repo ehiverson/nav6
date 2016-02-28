@@ -29,45 +29,21 @@ from mpu9150mathfuncs import *
 import time
 import Queue
 import threading
-import struct
-
+from Drone import Drone
 
 
 def serialIn(comport,queueobject):
     cond=True
-    ser=serial.Serial(port=comport,timeout=.5,baudrate=115200) 
+    drone=Drone(comport) 
+    drone.setStream(True)
     times=np.zeros((20))
     times[-1]=time.clock()
     j=0
     
     while cond:
-        while True:
-            b=ser.read()
-            if ord(b)==0x7e:
-                break
-        b=ser.read()
-        packetlength=struct.unpack('B',b)[0]          
-        b=ser.read(packetlength)
-        c=''     
-        xorflag=False
-        for i in range(len(b)):        
-            if xorflag==False and ord(b[i])==0x7d:
-                xorflag=True
-            else:
-                if xorflag==True and ((ord(b[i])^32==0x7e) or (ord(b[i])^32==0x7d)):
-                    c+=chr(ord(b[i])^32)
-                    xorflag=False
-                else:
-                    c+=b[i]
-                    xorflag=False
-        blist=[] 
-        for i in range(len(c)//4):
-            blist.append(c[i*4:i*4+4])
-        for i in range(len(blist)):
-            blist[i]=struct.unpack('f',blist[i])[0]
-    
+        data=drone.parseDataStream()
         try:
-            queueobject.put(blist,block=False)
+            queueobject.put(data,block=False)
         except:
             pass
         times[:-1]=times[1:]
@@ -157,27 +133,12 @@ serialThread.start()
 while cond: 
     try:
         #Serial data transfer        
-        b=queue.get()
-        q[0]=b[0]
-        q[1]=b[1]
-        q[2]=b[2]
-        q[3]=b[3]
+        q,m,a,rm,skippedBytes=queue.get()
+
         #print q
         
         print 'r','%.1f' %np.rad2deg(np.arctan2(2*(q[0]*q[1]+q[2]*q[3]),1-2*(q[1]**2+q[2]**2))),'y','%.1f'%np.rad2deg(np.arctan2(2*(q[0]*q[3]+q[1]*q[2]),1-2*(q[2]**2+q[3]**2))),'p', '%.1f'%np.rad2deg(np.arcsin(2*(q[0]*q[2]-q[3]*q[1])))      
           
-        m[0]=float(b[4])
-        m[1]=float(b[5])
-        m[2]=float(b[6])
-        
-        a[0]=float(b[7])
-        a[1]=float(b[8])
-        a[2]=float(b[9])
-        
-        
-        rm[0]=float(b[10])
-        rm[1]=float(b[11])
-        rm[2]=float(b[12])
         
         
         
