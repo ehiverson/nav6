@@ -27,45 +27,10 @@ import scipy.linalg as la
 from pylab import *
 from mpu9150mathfuncs import *
 import time
-import queue
-import threading
+
 from Drone import Drone
 
 
-def serialIn(comport,queueobject):
-    cond=True
-    drone=Drone(comport) 
-    drone.setStream(True)
-    times=np.zeros((20))
-    times[-1]=time.clock()
-    j=0
-    
-    while cond:
-        data=drone.parseDataStream()
-        try:
-            queueobject.put(data,block=False)
-        except:
-            pass
-        times[:-1]=times[1:]
- 
-        times[-1]=time.clock()
-        j+=1 
-
-        if j==20:
-            j=0            
-          #  print "FPS",'%.0f'%(1/np.ediff1d(times).mean())
-        try:
-            out=exitQueue.get(block=False)
-        except:
-            continue      
-        if out=='exit':
-            ser.close()  
-            print("serial closing")
-            return
-        
-dataQueue=queue.LifoQueue(maxsize=1)
-exitQueue=queue.Queue()
-serialThread=threading.Thread(target=serialIn,args=('COM14',dataQueue))
 
 #Initiate plotting objects 
 fig = plt.figure()
@@ -124,20 +89,22 @@ iovec2=np.array([0,1,0])
 iovec3=np.array([0,1,1])
 iovec4=np.array([1,0,0])
 
+
+drone=Drone('COM14')
+drone.setStream(True)
 #Loop variables.
 cond=True
 v=0
 yaw2=0
-serialThread.start()
 
-while cond: 
+while cond:
     try:
         #Serial data transfer        
-        q,m,a,rm,skippedBytes=dataQueue.get()
-
-        #print q
+        q,m,a,rm,skippedBytes=drone.dataQueue.get()
+        #print(skippedBytes)
+        print(q)
         
-        print ('r','%.1f' %np.rad2deg(np.arctan2(2*(q[0]*q[1]+q[2]*q[3]),1-2*(q[1]**2+q[2]**2))),'y','%.1f'%np.rad2deg(np.arctan2(2*(q[0]*q[3]+q[1]*q[2]),1-2*(q[2]**2+q[3]**2))),'p', '%.1f'%np.rad2deg(np.arcsin(2*(q[0]*q[2]-q[3]*q[1]))))   
+        #print('r','%.1f' %np.rad2deg(np.arctan2(2*(q[0]*q[1]+q[2]*q[3]),1-2*(q[1]**2+q[2]**2))),'y','%.1f'%np.rad2deg(np.arctan2(2*(q[0]*q[3]+q[1]*q[2]),1-2*(q[2]**2+q[3]**2))),'p', '%.1f'%np.rad2deg(np.arcsin(2*(q[0]*q[2]-q[3]*q[1]))))   
           
         
         
@@ -198,11 +165,9 @@ while cond:
 
     except KeyboardInterrupt:
         cond=False
-        exitQueue.put('exit')
         time.sleep(0.1)
 
-       
-
+        drone.exit=True
         plt.close(fig)
         if magplot:
             plt.close(fig2)
