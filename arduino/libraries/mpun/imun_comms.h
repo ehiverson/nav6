@@ -6,13 +6,15 @@ class ImunComms
 {
 	public:
 		ImunComms(Stream& serial);
-		void transmitBytes(uint8_t* in, uint8_t length);
-		uint8_t receiveBytes(uint8_t* buffer);
-		void convertData(float * buffer, uint8_t bufferLength,unsigned char  out[]);
+		void receiveBytes(uint8_t* buffer);
 		void receiveCommands();
+		void transmitCommandPacket(String command);
+		void transmitDataPacket(Quaternion q,VectorFloat magvec,VectorFloat accelvec,VectorFloat rmagvec);
 		Stream& _serial;
 		bool stream=false;
-
+	private:
+		void convertFloatToByte(float * buffer, uint8_t bufferLength,unsigned char  out[]);
+		void transmitPacket(uint8_t* in, uint8_t length,uint8_t packetType);
 };
 
 ImunComms::ImunComms(Stream& serial):_serial(serial)
@@ -20,12 +22,25 @@ ImunComms::ImunComms(Stream& serial):_serial(serial)
 
 }
 
-
-void ImunComms::transmitBytes(uint8_t* in,uint8_t length)
+void ImunComms::transmitDataPacket(Quaternion q,VectorFloat magvec,VectorFloat accelvec,VectorFloat rmagvec)
+{
+	float buff[13]={q.w,q.x,q.y,q.z,magvec.x,magvec.y,magvec.z,accelvec.x,accelvec.y,accelvec.z,rmagvec.x,rmagvec.y,rmagvec.z};
+    unsigned char p[sizeof(buff)+1];
+    convertFloatToByte(buff,13,p);
+    transmitPacket(p,sizeof(p),1);
+}
+void ImunComms::transmitCommandPacket(String command)
+{
+	uint8_t buff[256];
+	command.getBytes(buff,sizeof(buff));
+	transmitPacket(buff,command.length(),2);
+}
+void ImunComms::transmitPacket(uint8_t* in,uint8_t length,uint8_t packetType)
 {
 	uint8_t packet[256];
 	packet[0]=0x7e;
-	int index=2;
+	packet[1]=packetType;
+	int index=3;
 	for (uint8_t i=0;i<length;i++){
 		if ((in[i]==0x7e) or (in[i]==0x7d)){
 			length+=1;
@@ -38,28 +53,25 @@ void ImunComms::transmitBytes(uint8_t* in,uint8_t length)
 			index++;
 		}
 	}
-	packet[1]=length;
+	
+	packet[2]=length;
 	_serial.write(packet,index);
 }
-uint8_t ImunComms::receiveBytes(uint8_t* buffer){
+void ImunComms::receiveBytes(uint8_t* buffer){
 	while (true){
 		if (_serial.read()==0x7e){break;}
 	}
 	uint8_t length=_serial.read();
-	uint8_t finalLength=length;
 	for (uint8_t i=0;i<length;i+=1){
 		uint8_t in=_serial.read();
-		if ((in==0x7d) and (((_serial.peek()^32)==0x7e) or ((_serial.peek()^32)==0x7d))){
-			finalLength-=1;
+		if (in==0x7d){
 			buffer[i]=_serial.read()^32;
 		}
 		else{buffer[i]=in;}
 	}
-	return finalLength;
 }		
 
-void ImunComms::convertData(float buffer[],uint8_t bufferLength,unsigned char p[]){
-	uint8_t outLength=0;
+void ImunComms::convertFloatToByte(float buffer[],uint8_t bufferLength,unsigned char p[]){
 	union {
 		float a;
 		unsigned char bytes[4];
@@ -77,7 +89,7 @@ void ImunComms::receiveCommands(){
 		String in=_serial.readStringUntil('/');
 		if (in=="isitadrone?")
 		{
-			_serial.println("yesitis!");
+			transmitCommandPacket("yesitis!");
 		}
 		
 		if (in=="streamon")
@@ -86,6 +98,8 @@ void ImunComms::receiveCommands(){
 			stream=false;
 	}
 }
+
+
 
 
 #endif				/* _COMMSN */
