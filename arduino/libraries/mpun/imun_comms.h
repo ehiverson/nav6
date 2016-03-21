@@ -7,7 +7,7 @@ class ImunComms
 	public:
 		ImunComms(Stream& serial);
 		void receiveBytes(uint8_t* buffer);
-		void receiveCommands();
+		void receiveCommands(Quaternion q,Quaternion* qorientation);
 		void transmitCommandPacket(String command);
 		void transmitDataPacket(Quaternion q,VectorFloat magvec,VectorFloat accelvec,VectorFloat rmagvec);
 		Stream& _serial;
@@ -83,7 +83,7 @@ void ImunComms::convertFloatToByte(float buffer[],uint8_t bufferLength,unsigned 
 	
 }
 
-void ImunComms::receiveCommands(){
+void ImunComms::receiveCommands(Quaternion q,Quaternion* qorientation){
 	while (_serial.available()>0)
 	{
 		String in=_serial.readStringUntil('/');
@@ -96,6 +96,14 @@ void ImunComms::receiveCommands(){
 			stream=true;
 		if (in=="streamoff")
 			stream=false;
+		if (in=="flatten")
+		{
+			_serial.println(qorientation->w);
+			_serial.println(qorientation->x);
+			_serial.println(qorientation->y);
+			_serial.println(qorientation->z);
+			*qorientation=q;	
+		}
 	}
 }
 

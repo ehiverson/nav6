@@ -58,7 +58,7 @@ VectorFloat a(0,0,0);
 VectorFloat g(0,0,0);
 VectorFloat v(0,0,0);
 VectorFloat acal(0,0,0);
-Quaternion q,qmag,fusedq,qout;
+Quaternion q,qmag,fusedq,qout,qorientation;
 float yawradians=0;
 VectorFloat rmagvec,magvec,magvec2;
 
@@ -171,7 +171,7 @@ void loop() {
 		  hal.new_gyro = 0;
 		if (( success == 0 ) and ((sensors & INV_XYZ_ACCEL)) and ((sensors & INV_WXYZ_QUAT))) 
 		{
-			q.init( (float)((quat[0] >> 16)/16384.0f),(float)((quat[1] >> 16)/16384.0f) ,(float)((quat[2] >> 16)/16384.0f) ,(float)((quat[3] >> 16)/16384.0f) );
+			q.init((float)((quat[0] >> 16)/16384.0f),(float)((quat[1] >> 16)/16384.0f) ,(float)((quat[2] >> 16)/16384.0f) ,(float)((quat[3] >> 16)/16384.0f) );
 			a.init((float)(accel[0]/16384.0f),(float)(accel[1]/16384.0f),(float)(accel[2]/16384.0f));
       g.init((float)(gyro[0]/16384.0f),(float)(gyro[1]/16384.0f),(float)(gyro[2]/16384.0f));
 			//Math processing
@@ -192,8 +192,9 @@ void mathprocess()
 {
     //Math processing
     //Generate a quaternion from a fusion of the magnetometer and gyro data.
-    fusedq=qmag.multiply(q);  
+    fusedq=qmag.multiply(q);
     a=a.rotate(fusedq);
+    fusedq=fusedq.multiply(qorientation.conjugate()); //This compensates for uneven mountinig of the IMU on the drone. when the flatten command is sent the drone is assumed to be placed on an even surface and facing magnetic north Later this qorientation should be loaded from and saved to eeprom. It is important that this step in performed after rotation of vectors.
     //Subtract gravity
     a=a.subtract(VectorFloat(0,0,1));
     v=v.add(a.multiply(interv/1000.0f));
@@ -203,9 +204,9 @@ void serialout(){
 	// Update client with quaternions and some raw sensor data
   if (comms.stream)
   {
-    comms.transmitDataPacket(q,magvec,a,rmagvec);
+    comms.transmitDataPacket(qout,magvec,a,rmagvec);
   }
-  comms.receiveCommands();
+  comms.receiveCommands(q,&qorientation);
 
 
 
