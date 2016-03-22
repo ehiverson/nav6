@@ -11,15 +11,12 @@ import threading
 import queue
 
 class Drone():
-    '''
-    I should make this a multithreaded object with one thread constantly parsing
-    input data and separating the stream from command responses while the main thread handles them.
-    '''
     def __init__(self,portName):
         self.port=serial.Serial(port=portName,baudrate=115200,timeout=2)
         self.thread=threading.Thread(target=self._threadedHandler)
         self.thread.daemon=True
         self.exit=False
+        self.exitLock=threading.Lock()
         self.dataQueue=queue.LifoQueue(maxsize=1)
         self.commandOutQueue=queue.Queue()
         self.commandInQueue=queue.Queue()
@@ -30,7 +27,16 @@ class Drone():
             self.port.close()
             self.port=None
             self.exit=True
+            self.thread.join()
             raise NameError('Port not recognized as correct device! Did not receive proper response.')
+    
+    def __del__(self):
+        self.close()
+        
+    def close(self):
+        self.exit=True
+        self.thread.join()
+        self.port.close()
 
         
     def identify(self):
@@ -49,13 +55,12 @@ class Drone():
         else: s=b'streamoff/'
         self.commandOutQueue.put(s)
     def parseStream(self):
-        skippedBytes=0
+        skippedBytes=[]
         while True:
             b=self.port.read()
             if b[0]==0x7e:
-
                 break
-            skippedBytes+=1
+            skippedBytes.append(b)
         packetType=self.port.read()[0]
         packetLength=self.port.read()[0]          
         b=self.port.read(packetLength)
