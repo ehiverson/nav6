@@ -8,7 +8,8 @@ from PyQt4 import QtCore,QtGui,uic
 import PyQt4.Qwt5 as Qwt
 
 import sys
-import serial, platform
+import serial
+from Drone import Drone
 
 class MyWindow(QtGui.QMainWindow):
     def __init__(self):
@@ -20,16 +21,19 @@ class MyWindow(QtGui.QMainWindow):
 class droneUI():
     def __init__(self):
         self.window=MyWindow()
+        self.drone=None
         
         self.window.Compass.setNeedle(Qwt.QwtCompassMagnetNeedle())
     
         #Signals
-        self.window.connectButton.released.connect(lambda: self.droneConnect(str(self.window.portsComboBox.currentText()))) #connects to port listed in box when connect button is pressed.
-        self.window.refreshPortsButton.released.connect(self.updateSerialPortsList) #updates list of serial ports when refresh button is pressed.
-        self.window.terminalSendButton.released.connect(self.sendTerminal)  #sends terminal data when send button is pressed
+        self.window.connectButton.clicked.connect(lambda: self.connect(str(self.window.portsComboBox.currentText()))) #connects to port listed in box when connect button is pressed.
+        self.window.terminalSendButton.clicked.connect(self.sendTerminal)  #sends terminal data when send button is pressed
         self.window.terminalSendBox.returnPressed.connect(self.sendTerminal) #sends terminal data when enter is pressed
         
-        self.updateSerialPortsList()
+        self.portRefreshTimer=QtCore.QTimer()
+        self.portRefreshTimer.setInterval(3000)
+        self.portRefreshTimer.timeout.connect(self.updateSerialPortsList)
+        self.portRefreshTimer.start()
         
 
     
@@ -40,36 +44,54 @@ class droneUI():
         
     def updateSerialPortsList(self):
         def list_serial_ports():
-            # A function that tries to list serial ports on most common platforms
-            system_name = platform.system()
-            if system_name == "Windows":
-                # Scan for available ports.
-                available = []
-                for i in range(256):
-                    try:
-                        s = serial.Serial(i)
-                        available.append(i)
-                        s.close()
-                    except serial.SerialException:
-                        pass
-                return available
-            elif system_name == "Darwin":
-                # Mac
-                return glob.glob('/dev/tty*') + glob.glob('/dev/cu*')
+            """ Lists serial port names
+        
+                :raises EnvironmentError:
+                    On unsupported or unknown platforms
+                :returns:
+                    A list of the serial ports available on the system
+            """
+            if sys.platform.startswith('win'):
+                ports = ['COM%s' % (i + 1) for i in range(256)]
+            elif sys.platform.startswith('linux') or sys.platform.startswith('cygwin'):
+                # this excludes your current terminal "/dev/tty"
+                ports = glob.glob('/dev/tty[A-Za-z]*')
+            elif sys.platform.startswith('darwin'):
+                ports = glob.glob('/dev/tty.*')
             else:
-                # Assume Linux or something else
-                return glob.glob('/dev/ttyS*') + glob.glob('/dev/ttyUSB*')
+                raise EnvironmentError('Unsupported platform')
+        
+            result = []
+            for port in ports:
+                try:
+                    s = serial.Serial(port)
+                    s.close()
+                    result.append(port)
+                except (OSError, serial.SerialException):
+                    pass
+            return result
         ports=list_serial_ports()
         self.window.portsComboBox.clear()
         for i in range(len(ports)):
-            self.window.portsComboBox.addItem("COM"+str(ports[i]+1))
+            self.window.portsComboBox.addItem(ports[i])
         
     def updateTerminalBox(self):
         a=''        
         while self.ser.inWaiting()>0:
             a+=self.ser.read()
         self.window.terminalDisplayBox.setText(a)
-
+    
+    def connect(self,portname):
+        self.drone=Drone(portname)
+        self.window.connectButton.setText('Disconnect')
+        self.window.connectButton.clicked.disconnect()
+        self.window.connectButton.clicked.connect(self.disconnect)
+    def disconnect(self):
+        self.drone.close()
+        self.drone=None
+        self.window.connectButton.setText('Connect')
+        self.window.connectButton.clicked.disconnect()
+        self.window.connectButton.clicked.connect(self.connect)
 
 
 
