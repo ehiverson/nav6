@@ -1,6 +1,6 @@
 
-#ifndef _HALN
-#define _HALN
+#ifndef _HALN_H
+#define _HALN_H
 
 #define SDA_PIN A4
 #define SCL_PIN A5

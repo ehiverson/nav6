@@ -1,6 +1,6 @@
 
-#ifndef _COMMSN
-#define _COMMSN
+#ifndef _COMMSN_H
+#define _COMMSN_H
 
 class ImunComms
 {
@@ -110,5 +110,5 @@ void ImunComms::receiveCommands(Quaternion q,Quaternion* qorientation){
 
 
 
-#endif				/* _COMMSN */
+#endif				/* _COMMSN_H */
 

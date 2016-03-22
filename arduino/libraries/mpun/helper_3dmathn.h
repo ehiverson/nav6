@@ -29,8 +29,8 @@ THE SOFTWARE.
 ===============================================
 */
 
-#ifndef _HELPER_3DMATH_H_
-#define _HELPER_3DMATH_H_
+#ifndef _HELPER_3DMATH_H
+#define _HELPER_3DMATH_H
 #include <cmath>
 
 // angle in radians = angle in degrees * Pi / 180
@@ -306,4 +306,4 @@ VectorFloat gravity(Quaternion q)
 	return VectorFloat(2 * (q.x * q.z - q.w * q.y), 2 * (q.w * q.x + q.y * q.z), q.w * q.w - q.x * q.x - q.y * q.y + q.z * q.z);
 }
 
-#endif /* _HELPER_3DMATH_H_ */
+#endif /* _HELPER_3DMATH_H */
