@@ -31,7 +31,7 @@ class droneUI():
         self.window.terminalSendBox.returnPressed.connect(self.sendTerminal) #sends terminal data when enter is pressed
         
         self.portRefreshTimer=QtCore.QTimer()
-        self.portRefreshTimer.setInterval(3000)
+        self.portRefreshTimer.setInterval(1000)
         self.portRefreshTimer.timeout.connect(self.updateSerialPortsList)
         self.portRefreshTimer.start()
         
@@ -88,10 +88,10 @@ class droneUI():
         self.window.connectButton.clicked.connect(self.disconnect)
     def disconnect(self):
         self.drone.close()
-        self.drone=None
+        #self.drone=None
         self.window.connectButton.setText('Connect')
         self.window.connectButton.clicked.disconnect()
-        self.window.connectButton.clicked.connect(self.connect)
+        self.window.connectButton.clicked.connect(lambda: self.connect(str(self.window.portsComboBox.currentText())))
 
 
 

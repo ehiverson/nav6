@@ -143,7 +143,7 @@ finally:
     cond=False
     time.sleep(0.1)
 
-    drone.exit=True
+    drone.close()
     plt.close(fig)
     
     if magcalibrate or magcalcheck:
