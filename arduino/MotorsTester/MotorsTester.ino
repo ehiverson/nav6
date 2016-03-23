@@ -31,42 +31,42 @@ void loop() {
     e=Serial1.readStringUntil('/');
     if (e.substring(0,1)=="1")
     {
-      motor1.setThrottle(e.substring(1).toInt()/100.f);
+      motor1.setThrottle(e.substring(1).toInt());
     }
     else if (e.substring(0,1)=="2")
     {
-      motor2.setThrottle(e.substring(1).toInt()/100.f);
+      motor2.setThrottle(e.substring(1).toInt());
     }
     else if (e.substring(0,1)=="3")
     {
-      motor3.setThrottle(e.substring(1).toInt()/100.f);
+      motor3.setThrottle(e.substring(1).toInt());
     }
     else if (e.substring(0,1)=="4")
     {
-      motor4.setThrottle(e.substring(1).toInt()/100.f);
+      motor4.setThrottle(e.substring(1).toInt());
     }
     else if (e.substring(0,1)=="a")
     {
-      motor1.setThrottle(e.substring(1).toInt()/100.f);
-      motor2.setThrottle(e.substring(1).toInt()/100.f);
-      motor3.setThrottle(e.substring(1).toInt()/100.f);
-      motor4.setThrottle(e.substring(1).toInt()/100.f);
+      motor1.setThrottle(e.substring(1).toInt());
+      motor2.setThrottle(e.substring(1).toInt());
+      motor3.setThrottle(e.substring(1).toInt());
+      motor4.setThrottle(e.substring(1).toInt());
     }
     else if (e.substring(0,1)=='y')
     {
-      motors.setYaw(e.substring(1).toInt()/100.f);
+      motors.setYaw(e.substring(1).toInt());
     }
     else if (e.substring(0,1)=='t')
     {
-      motors.setThrust(e.substring(1).toInt()/100.f);
+      motors.setThrust(e.substring(1).toInt());
     }
     else if (e.substring(0,1)=='r')
     {
-      motors.setRoll(e.substring(1).toInt()/100.f);
+      motors.setRoll(e.substring(1).toInt());
     }
     else if (e.substring(0,1)=='p')
     {
-      motors.setPitch(e.substring(1).toInt()/100.f);
+      motors.setPitch(e.substring(1).toInt());
     }
     else if (e.substring(0,1)=='k')
     {

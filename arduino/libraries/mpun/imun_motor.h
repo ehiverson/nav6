@@ -1,7 +1,7 @@
 
 
-#ifndef _IMUN_MOTOR_
-#define _IMUN_MOTOR_
+#ifndef _IMUN_MOTOR_H
+#define _IMUN_MOTOR_H
 #define MAX_SERVO_TIME 2000
 #define MIN_SERVO_TIME 1000
 #include <Arduino.h>
@@ -30,10 +30,10 @@ ImunMotor::ImunMotor(uint8_t pin)
 	motor.attach(pin,MIN_SERVO_TIME,MAX_SERVO_TIME);
 }
 
-void ImunMotor::setThrottle(float newThrottle) //newThrottle is a value between 0 and 255
+void ImunMotor::setThrottle(float newThrottle) //newThrottle is a percentage between 0 and 100
 {
 	throttle=newThrottle;
-	motor.writeMicroseconds(MIN_SERVO_TIME+timeDifference*newThrottle);
+	motor.writeMicroseconds(MIN_SERVO_TIME+timeDifference*newThrottle/100.0f);
 }
 
 void ImunMotor::escCalibration()
@@ -42,6 +42,8 @@ void ImunMotor::escCalibration()
 	delay(2200);
 	motor.writeMicroseconds(MIN_SERVO_TIME);
 }
+
+//How to clamp values?
 
 class ImunQuadMotor
 {
@@ -56,8 +58,9 @@ class ImunQuadMotor
 		void setThrust(float thrust);
 		void setPitch(float pitch);
 		void setRoll(float roll);
-		void setMotors();
 		void killMotors();
+	private:
+		void setMotors();
 };
 
 ImunQuadMotor::ImunQuadMotor(ImunMotor &motor1,ImunMotor &motor2,ImunMotor &motor3,ImunMotor &motor4):_m1(motor1),_m2(motor2),_m3(motor3),_m4(motor4)//1=front left 2=front right 3=back left 4= back right
@@ -83,6 +86,7 @@ void ImunQuadMotor::setThrust(float thrust)
 	setMotors();
 }	
 void ImunQuadMotor::setMotors(){
+	
 	_m1.setThrottle(_thrust+_yaw+_pitch+_roll);
 	_m2.setThrottle(_thrust-_yaw+_pitch-_roll);
 	_m3.setThrottle(_thrust-_yaw-_pitch+_roll);	
@@ -93,10 +97,7 @@ void ImunQuadMotor::killMotors(){
 	_yaw=0;
 	_roll=0;
 	_thrust=0;
-	_m1.setThrottle(0);
-	_m2.setThrottle(0);
-	_m3.setThrottle(0);	
-	_m4.setThrottle(0);
+	setMotors();
 }
 
-#endif /*_IMUN_MOTOR_ */
+#endif /*_IMUN_MOTOR_H */
