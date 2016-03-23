@@ -7,31 +7,49 @@
 
 class PID
 {
-	float value=0;
-	float P=1,I=1,D=1,integral=0,lastValue;
-	float *_currentValue,*_setValue;
-	int *_timeStamp,lastTimeStamp;
+	float output=0,P,I,D,integral=0,lastValue,outMax,outMin;
+	int lastTimeStamp;
 	public:
-		PID(float *_currentValue,float *_setValue,int *_timestamp); 
-		float calculate();
+		PID(float p, float i, float d, float minOut, float maxOut); 
+		float calculate(float currentValue,float setValue,int timeStamp);
 		void setPID(float p,float i,float d);
+	private:
+		void setOutputLimits(float Min, float Max);
 		
 };
 
-PID::PID(float *currentValue,float *setValue,int *timestamp){	
-	_currentValue=currentValue;
-	_setValue=setValue;
-	_timeStamp=timestamp;
-	lastValue=*_currentValue;
-	lastTimeStamp=*_timeStamp;
+PID::PID(float p, float i, float d, float minOut, float maxOut){
+	setPID(p,i,d)
+	setOutputLimits(minOut,maxOut);
+}
+		
+//Does time need to be in seconds?
+float PID::calculate(float currentValue,float setValue,int timeStamp){
+	float error=currentValue-setValue;
+	integral+=error*(timeStamp-lastTimeStamp);
+	if (integral>outMax) integral=outMax;
+	else if (integral<outMin) integral=outMin;
+	float derivative=(currentValue-lastValue)/(timeStamp-lastTimeStamp);
+	lastValue=currentValue;
+	lastTimeStamp=timestamp;
+	output=P*error+I*integral+D*derivative;
+	if (output>outMax) output=outMax;
+	else if (output<outMin) output=outMin;
 }
 
-float PID::calculate(){
-	float difference=*_currentValue-*_setValue;
-	integral+=difference/(*_timeStamp-lastTimeStamp);
-	float derivative=(*_currentValue-lastValue)/(*_timeStamp-lastTimeStamp);
-	return P*difference+I*integral+D*derivative;
+void PID::setOutputLimits(float Min, float Max)
+{
+   if(Min > Max) return;
+   outMin = Min;
+   outMax = Max;
+    
+   if(output > outMax) output = outMax;
+   else if(output < outMin) output = outMin;
+ 
+   if(integral> outMax) integral= outMax;
+   else if(integral< outMin) integral= outMin;
 }
+
 void PID::setPID(float p, float i, float d){
 	P=p;
 	I=i;
