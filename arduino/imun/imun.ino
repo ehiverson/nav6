@@ -12,12 +12,6 @@ extern "C" {
 }
 
 
-/*
-#ifndef cbi
-#define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
-#endif
-*/
-
 //Define comm port
 ImunComms comms(Serial1);
 
@@ -116,34 +110,31 @@ void setup() {
 }
 
 bool firstmagloop=true;
-uint8_t i=0;
 void loop() {
 	// Read compass heading data if it has been updated recently.
 	if ( elapsed_since_compass>compass_measurement_period )
 	{
 		//Get raw magnetometer data and store it as a vector.
 		mpu_get_compass_reg(compass_data,NULL);
-		//Note that the x and y values are switched and the z value is negative. This is becuase the magnetometer has a different orientation than the accelerometer and gyro.
-		rmagvec.init(compass_data[1],compass_data[0],-compass_data[2]);
+		rmagvec.init(compass_data[1],compass_data[0],-compass_data[2]);     //Note that the x and y values are switched and the z value is negative. This is becuase the magnetometer has a different orientation than the accelerometer and gyro.
 		rmagvec=rmagvec.multiply(0.01);
+		
 		//Calibrate raw magnetometer data based on previously determined calibration values.
 		magvec=ellipseTransform(rmagvec,magCalMatrix,magCalOffsets);
+		
 		//Get the temperature and convert to centigrade
 		mpu_get_temperature(&curr_mpu_temp, &sensor_timestamp);
 		temp_centigrade = (float)curr_mpu_temp/65536.0;
+		
 		//Math operations
-		magvec=magvec.rotate(q);
+		magvec=magvec.rotate(q); //rotate the magnetic vector to world frame of reference
     
 		//Lowpass filter of rotated magnetic vector for stability. Via exponential smoothing.
-		if (firstmagloop)
-		{
-			magvec2=magvec;
-			firstmagloop=false;
-		}
+		if (firstmagloop){magvec2=magvec;firstmagloop=false;}
 		magvec=magvec.multiply(alpha).add(magvec2.multiply(1-alpha));
 		magvec2=magvec;
 		
-		//Calculate quaternion from magnetometer data.
+		//Calculate yaw quaternion from magnetometer data.
 		yawradians=atan2(magvec.x,magvec.y);
 		qmag=qfromYaw(zaxis0,yawradians);		
     
@@ -207,8 +198,5 @@ void serialout(){
     comms.transmitDataPacket(qout,magvec,a,rmagvec);
   }
   comms.receiveCommands(q,&qorientation);
-
-
-
 }
 
