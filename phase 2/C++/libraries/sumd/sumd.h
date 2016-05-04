@@ -6,19 +6,21 @@
 #ifndef SUMD_H
 #define SUMD_H
 
-
+#include <stdint.h>
+#include <Arduino.h>
 class SUMDCommunicator
 {
 	public:
+		SUMDCommunicator(Stream& serial);
 		uint8_t readPacket();
-		void sendPacket(uint8_t numOfChannels,uint16_t* channelData);
+		void sendPacket(uint8_t numOfChannels,uint16_t channelData[]);
 		void sendFailsafe();
 		uint16_t channelOutput[16];
 		bool RXfailsafe=false;
 	private:
 		Stream& _serial;
 		
-}
+};
 
 
 
@@ -30,31 +32,39 @@ SUMDCommunicator::SUMDCommunicator(Stream& serial): _serial(serial)
 
 void SUMDCommunicator::sendFailsafe()
 {
-	uint8_t packet[2]={0xA8,0x81);
+	uint8_t packet[2]={0xA8,0x81};
 	_serial.write(packet,2);
+}
 void SUMDCommunicator::sendPacket(uint8_t numOfChannels,uint16_t channelData[])
 {
 	uint8_t packet[3+2*numOfChannels+2];
 	packet[0]=0xA8;
 	packet[1]=0x01;
 	packet[2]=numOfChannels;
-	for (uint8_t i==0;i<(2*numOfChannels);i++)
+	Serial.println(channelData[1]);
+	for (uint8_t i=0;i<(numOfChannels);i++)
 	{
+		Serial.println(i);
 		packet[3+2*i]=(uint8_t)(channelData[i*2]>>8);
 		packet[4+2*i]=(uint8_t)(channelData[2*i+1]);
+		Serial.println(4+2*i);
 	}
+	Serial.println(channelData[1]);
 	uint16_t crc = 0;
 	for (uint8_t j=0;j<(3+2*numOfChannels);j++) 
 	{
 		crc^=(uint16_t)packet[j]<< 8;
-		for (i=0;i<8;i++)
+		for (uint8_t i=0;i<8;i++)
 		{
 			crc=(crc&0x8000)?(crc<<1)^0x1021:(crc<<1);
 		}
 	}
+	Serial.println(channelData[1]);
 	packet[3+2*numOfChannels]=(uint8_t)(crc>>8);
 	packet[4+2*numOfChannels]=(uint8_t)crc;
-	_serial.write(packet,5+2*numofChannels);
+	Serial.println(channelData[1]);
+	_serial.write(packet,5+2*numOfChannels);
+	Serial.println(channelData[1]);
 }
 uint8_t SUMDCommunicator::readPacket()
 {
@@ -67,24 +77,24 @@ uint8_t SUMDCommunicator::readPacket()
 	//16800		2100							150%
 	//7200		900								-150%
 	
-	while true 
+	while (true) 
 	{
 		if (_serial.read() == 0xA8)//Sumd header indicates the beginning of a packet
 		{
-			uint8_t data=_serial.read()
+			uint8_t data=_serial.read();
 			if (data==0x01)
 			{
 				RXfailsafe=false;
 				break; //Status is ok
 			}
-			else if (data=0x81) //transmitter is indicating that there is an issue
+			else if (data==0x81) //transmitter is indicating that there is an issue
 			{
 				RXfailsafe=true;
 				return 0;
 			}
 		}
 	} 
-	channelCnt = _serial.read();
+	uint8_t channelCnt = _serial.read();
 	uint8_t RXBuffer[3+2*channelCnt];
 	RXBuffer[0]=0xA8;
 	RXBuffer[1]=0x01;
@@ -94,7 +104,7 @@ uint8_t SUMDCommunicator::readPacket()
 		uint8_t channelBuffer[2];
 		uint16_t channelValue;
 	} converter;
-	for (uint i=0;i<channelCnt;i++)
+	for (uint8_t i=0;i<channelCnt;i++)
 	{
 		converter.channelBuffer[0]=_serial.read();
 		converter.channelBuffer[1]=_serial.read();
@@ -107,13 +117,13 @@ uint8_t SUMDCommunicator::readPacket()
 	for (uint8_t j=0;j<(3+2*channelCnt);j++) 
 	{
 		crc^=(uint16_t)RXBuffer[j]<< 8;
-		for (i=0;i<8;i++)
+		for (uint8_t i=0;i<8;i++)
 		{
 			crc=(crc&0x8000)?(crc<<1)^0x1021:(crc<<1);
 		}
 	}
 	uint8_t a=_serial.read();
-	uint8_t b=_serial.read()
+	uint8_t b=_serial.read();
 	if (crc!=(((uint16_t)a<<8)|b))
 	{
 		return 0;

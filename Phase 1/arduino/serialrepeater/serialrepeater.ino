@@ -1,8 +1,11 @@
 
 void setup() {
   // put your setup code here, to run once:
-
-Serial.begin(9600);
+pinMode(2,OUTPUT);
+pinMode(3,OUTPUT);
+digitalWrite(2,HIGH);
+digitalWrite(3,LOW);
+Serial.begin(115200);
 Serial1.begin(115200);
 }
 
