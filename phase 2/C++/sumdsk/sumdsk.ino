@@ -14,8 +14,8 @@ void loop() {
   // put your main code here, to run repeatedly:
   if (t>=10){
     t=0;
-    uint16_t p[]={12000,14000,8800,10000,11000};
-    uint8_t numOC=5;
+    uint16_t p[]={12000,14000,8800,10000,11000,11000,11000,11000,11000,11000,11000,11000};
+    uint8_t numOC=12;
     sum.sendPacket(numOC,p);}
 }
   

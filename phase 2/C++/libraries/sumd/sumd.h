@@ -41,15 +41,13 @@ void SUMDCommunicator::sendPacket(uint8_t numOfChannels,uint16_t channelData[])
 	packet[0]=0xA8;
 	packet[1]=0x01;
 	packet[2]=numOfChannels;
-	Serial.println(channelData[1]);
+
 	for (uint8_t i=0;i<(numOfChannels);i++)
 	{
-		Serial.println(i);
-		packet[3+2*i]=(uint8_t)(channelData[i*2]>>8);
-		packet[4+2*i]=(uint8_t)(channelData[2*i+1]);
-		Serial.println(4+2*i);
+		packet[3+2*i]=(uint8_t)(channelData[i]>>8);
+		packet[4+2*i]=(uint8_t)(channelData[i]);
+
 	}
-	Serial.println(channelData[1]);
 	uint16_t crc = 0;
 	for (uint8_t j=0;j<(3+2*numOfChannels);j++) 
 	{
@@ -59,12 +57,12 @@ void SUMDCommunicator::sendPacket(uint8_t numOfChannels,uint16_t channelData[])
 			crc=(crc&0x8000)?(crc<<1)^0x1021:(crc<<1);
 		}
 	}
-	Serial.println(channelData[1]);
+
 	packet[3+2*numOfChannels]=(uint8_t)(crc>>8);
 	packet[4+2*numOfChannels]=(uint8_t)crc;
-	Serial.println(channelData[1]);
+
 	_serial.write(packet,5+2*numOfChannels);
-	Serial.println(channelData[1]);
+
 }
 uint8_t SUMDCommunicator::readPacket()
 {
