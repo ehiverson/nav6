@@ -18,7 +18,7 @@ void setup() {
     servs[i].attach(pins[i]);
   }
   for (uint8_t i=0;i<4;i++){
-    servs[i].writeMicroseconds(2000);
+    servs[i].writeMicroseconds(low);
   }
 }
 

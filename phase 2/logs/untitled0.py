@@ -7,7 +7,7 @@ Created on Thu May  5 18:36:38 2016
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
-data=pd.read_csv('log_27_2016-8-6-15-20-46.csv')
+data=pd.read_csv('22_49_28.csv')
 
 #strip nan and byte columns
 da={}
@@ -27,55 +27,38 @@ for i in data.columns:
         data[i].name=i[i.index('_')+1:]
         da[cat]=pd.DataFrame(data[i])
 
+def pl(itnup,ti=''):
+    plt.figure()
+    plt.title(ti)
+    for i in itnup:
+        plt.plot(itnup[i],label=i)
+    plt.legend()
+    
 time=da["TIME"]["StartTime"]
-
+'''
 subj=da["ATT"]
 rollfig=plt.figure()
 rollax=rollfig.add_subplot('111')
-rollax.plot(time,subj["Roll"]/(2*np.pi)*360)
+rollax.plot(time,subj["Roll"]/(2*np.pi)*360,label="Meas")
+rollax.plot(time,da["ATTC"]["Roll"]/(2*np.pi)*360,label="Control")
+rollax.plot(time,da["ATSP"]["RollSP"]/(2*np.pi)*360,label="SetPoint")
 plt.title('Roll')
 
 pitchfig=plt.figure()
 pitchax=pitchfig.add_subplot('111')
 pitchax.plot(time,subj["Pitch"]/(2*np.pi)*360)
+pitchax.plot(time,da["ATTC"]["Pitch"]/(2*np.pi)*360)
+pitchax.plot(time,da["ATSP"]["PitchSP"]/(2*np.pi)*360)
 plt.title('Pitch')
 
 yawfig=plt.figure()
 yawax=yawfig.add_subplot('111')
 yawax.plot(time,subj["Yaw"]/(2*np.pi)*360+180)
+yawax.plot(time,da["ATTC"]["Yaw"]/(2*np.pi)*360+180)
+yawax.plot(time,da["ATSP"]["YawSP"]/(2*np.pi)*360+180)
 plt.title('Yaw')
 
-subj=da["ATTC"]
-rollfig=plt.figure()
-rollax=rollfig.add_subplot('111')
-rollax.plot(time,subj["Roll"]/(2*np.pi)*360)
-plt.title('Roll')
 
-pitchfig=plt.figure()
-pitchax=pitchfig.add_subplot('111')
-pitchax.plot(time,subj["Pitch"]/(2*np.pi)*360)
-plt.title('Pitch')
-
-yawfig=plt.figure()
-yawax=yawfig.add_subplot('111')
-yawax.plot(time,subj["Yaw"]/(2*np.pi)*360+180)
-plt.title('Yaw')
-
-subj=da["ATSP"]
-rollfig=plt.figure()
-rollax=rollfig.add_subplot('111')
-rollax.plot(time,subj["RollSP"]/(2*np.pi)*360)
-plt.title('RollSP')
-
-pitchfig=plt.figure()
-pitchax=pitchfig.add_subplot('111')
-pitchax.plot(time,subj["PitchSP"]/(2*np.pi)*360)
-plt.title('PitchSP')
-
-yawfig=plt.figure()
-yawax=yawfig.add_subplot('111')
-yawax.plot(time,subj["YawSP"]/(2*np.pi)*360+180)
-plt.title('YawSP')
 
 barofig=plt.figure()
 baroax=barofig.add_subplot('211')
@@ -111,20 +94,28 @@ posax2=posfig2.add_subplot('111')
 plt.title("XY")
 #posax2.plot(time,subj["X"],time,subj["Y"])
 posax2.scatter(subj["X"],subj["Y"])
-'''
+
 magfig=plt.figure()
 da["IMU"]["MagMag"]=np.sqrt(da["IMU"]["MagX"]**2+da["IMU"]["MagY"]**2+da["IMU"]["MagZ"]**2)
 magax=magfig.add_subplot('111')
 magax.plot(time,da["IMU"]["MagMag"])
 magax.plot(time,da["ATSP"]["ThrustSP"])
 plt.title("Magnet magnitude")
-'''
+
 plt.figure()
 for i in da["STAT"].columns:
     plt.plot(da["STAT"][i],label=i)
     
 plt.legend()
 plt.show()
+
+
+pl(da["OUT0"],'outputs')
+pl(da["GPOS"],'gpos')
+pl(da['GPS'],'gps')
+'''
+
+pl(da["BATT"])
 '''
 GPSfig
 ATTCfig
